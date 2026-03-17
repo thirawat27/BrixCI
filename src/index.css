@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    "Noto Sans Thai",
+    "Noto Sans",
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: #eaf0ff;
+    background:
+      radial-gradient(circle at 18% 8%, rgba(45, 125, 255, 0.22) 0%, transparent 34%),
+      radial-gradient(circle at 84% 82%, rgba(73, 162, 59, 0.18) 0%, transparent 26%),
+      linear-gradient(180deg, #0a1020 0%, #09111d 100%);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-slate-700/70 bg-slate-900/70 shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-sm;
+  }
+}
+
+@layer utilities {
+  .canvas-grid {
+    background-image:
+      radial-gradient(circle at center, rgba(148, 163, 184, 0.2) 1px, transparent 1px);
+    background-size: 18px 18px;
+    background-position: center;
+  }
+}
+
+.react-flow__handle {
+  border: 1px solid #162235;
+  background: #38bdf8;
+}
+
+.react-flow__controls {
+  border-color: rgb(51 65 85 / 0.8) !important;
+  background: rgb(15 23 42 / 0.88) !important;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.24) !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom-color: rgb(51 65 85 / 0.65) !important;
+  color: rgb(226 232 240) !important;
+}
