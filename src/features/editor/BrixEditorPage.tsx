@@ -589,7 +589,7 @@ export function BrixEditorPage() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col font-sans text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-slate-800/80 bg-slate-950/88 px-3 py-3 backdrop-blur-xl md:px-4">
+      <header className="relative z-20 border-b border-slate-800/80 bg-slate-950/88 px-3 py-3 backdrop-blur-xl md:px-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
