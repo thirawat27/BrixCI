@@ -42,6 +42,8 @@ export interface UiDictionary {
   inspector: string
   selectNode: string
   deleteNode: string
+  duplicateNode: string
+  fitView: string
   nodeId: string
   nodeType: string
   nodeData: string
@@ -123,6 +125,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     inspector: 'Inspector',
     selectNode: 'Select a node to inspect details.',
     deleteNode: 'Delete Node',
+    duplicateNode: 'Duplicate',
+    fitView: 'Fit View',
     nodeId: 'Node ID',
     nodeType: 'Type',
     nodeData: 'Data',
@@ -203,6 +207,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     inspector: 'ตัวตรวจสอบ',
     selectNode: 'เลือกโหนดเพื่อดูรายละเอียด',
     deleteNode: 'ลบโหนด',
+    duplicateNode: 'ทำซ้ำ',
+    fitView: 'พอดีหน้าจอ',
     nodeId: 'รหัสโหนด',
     nodeType: 'ประเภท',
     nodeData: 'ข้อมูล',
@@ -283,6 +289,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     inspector: '检查器',
     selectNode: '请选择一个节点查看详情。',
     deleteNode: '删除节点',
+    duplicateNode: '复制',
+    fitView: '适配视图',
     nodeId: '节点 ID',
     nodeType: '类型',
     nodeData: '数据',

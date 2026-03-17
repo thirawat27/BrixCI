@@ -364,7 +364,9 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
     } catch (error) {
       if (error instanceof CompilationError) {
         set({ issues: error.issues })
+        console.error('[BrixCI] Compile blocked by issues:', error.issues)
       } else {
+        console.error('[BrixCI] Unexpected compile error:', error)
         set({
           issues: [
             {
@@ -378,6 +380,7 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       return null
     }
   },
+
 
   undo: () => {
     set((state) => {

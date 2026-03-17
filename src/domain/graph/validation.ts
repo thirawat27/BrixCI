@@ -202,9 +202,9 @@ export function validateGraph(graph: GraphState): ValidationIssue[] {
     if (!step.data.jobNodeId) {
       issues.push({
         code: 'STEP_JOB_NOT_FOUND',
-        severity: 'error',
+        severity: 'warning',
         nodeId: step.id,
-        message: `Step "${step.data.label}" is not assigned to a Job.`,
+        message: `Step "${step.data.label}" is not assigned to a Job (will be skipped on compile).`,
       })
       continue
     }
@@ -213,9 +213,9 @@ export function validateGraph(graph: GraphState): ValidationIssue[] {
     if (!parentJob || parentJob.type !== 'job') {
       issues.push({
         code: 'STEP_JOB_NOT_FOUND',
-        severity: 'error',
+        severity: 'warning',
         nodeId: step.id,
-        message: `Step "${step.data.label}" references an invalid Job.`,
+        message: `Step "${step.data.label}" references a Job that no longer exists (will be skipped on compile).`,
       })
     }
   }
