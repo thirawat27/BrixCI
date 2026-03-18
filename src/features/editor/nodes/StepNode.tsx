@@ -51,11 +51,11 @@ export function StepNode({ id, data, selected }: NodeProps<StepFlowNode>) {
 
   return (
     <div
-      className={`grid min-w-[280px] max-w-[340px] gap-3 rounded-2xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
+      className={`grid min-w-[280px] max-w-[340px] gap-2 rounded-xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
         selected ? 'border-emerald-400 ring-1 ring-emerald-300/50' : 'border-slate-700'
       }`}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Left} className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
       <div className="flex items-center gap-2 border-b border-dashed border-slate-600 pb-2 text-[11px] font-bold uppercase tracking-widest text-emerald-300">
         <ListChecks size={14} className="opacity-80" />
         {text.stepNode}
@@ -173,7 +173,7 @@ export function StepNode({ id, data, selected }: NodeProps<StepFlowNode>) {
         {text.jobRef}: {data.jobNodeId || text.unassigned}
       </div>
 
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
     </div>
   )
 }

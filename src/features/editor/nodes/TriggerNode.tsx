@@ -89,7 +89,7 @@ export function TriggerNode({ id, data, selected }: NodeProps<TriggerFlowNode>) 
 
   return (
     <div
-      className={`grid min-w-[280px] max-w-[340px] gap-3 rounded-2xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
+      className={`grid min-w-[280px] max-w-[340px] gap-2 rounded-xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
         selected ? 'border-sky-400 ring-1 ring-sky-400/50' : 'border-slate-700'
       }`}
     >
@@ -175,7 +175,7 @@ export function TriggerNode({ id, data, selected }: NodeProps<TriggerFlowNode>) 
         />
       )}
 
-      <Handle type="source" position={Position.Right} />
+      <Handle type="source" position={Position.Right} className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
     </div>
   )
 }

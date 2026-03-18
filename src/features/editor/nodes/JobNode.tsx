@@ -50,11 +50,11 @@ export function JobNode({ id, data, selected }: NodeProps<JobFlowNode>) {
 
   return (
     <div
-      className={`grid min-w-[280px] max-w-[340px] gap-3 rounded-2xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
+      className={`grid min-w-[280px] max-w-[340px] gap-2 rounded-xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
         selected ? 'border-amber-400 ring-1 ring-amber-300/50' : 'border-slate-700'
       }`}
     >
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Left} className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
       <div className="flex items-center gap-2 border-b border-dashed border-slate-600 pb-2 text-[11px] font-bold uppercase tracking-widest text-amber-300">
         <BriefcaseBusiness size={14} className="opacity-80" />
         {text.jobNode}
@@ -175,8 +175,8 @@ export function JobNode({ id, data, selected }: NodeProps<JobFlowNode>) {
         <FieldInput label={text.environmentUrl} value={data.environmentUrl ?? ''} onChange={(v) => update('environmentUrl', v)} placeholder="https://my-app.com" mono />
       </Section>
 
-      <Handle type="source" position={Position.Right} id="job-output" />
-      <Handle type="source" position={Position.Bottom} id="job-step-output" />
+      <Handle type="source" position={Position.Right} id="job-output" className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
+      <Handle type="source" position={Position.Bottom} id="job-step-output" className="!w-6 !h-6 !bg-slate-800 !border-[3px] !border-white hover:!bg-white transition-colors cursor-crosshair" />
     </div>
   )
 }

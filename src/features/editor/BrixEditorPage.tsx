@@ -150,7 +150,7 @@ function ToolbarMenu({
     <div className="relative" ref={menuRef}>
       <button
         aria-expanded={open}
-        className="inline-flex shrink-0 min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110"
+        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110"
         onClick={() => {
           setOpen((current) => !current)
         }}
@@ -359,7 +359,7 @@ function iconButtonClass(
   tone: 'sky' | 'amber' | 'emerald' | 'neutral' | 'success' | 'danger' = 'neutral',
 ): string {
   const baseClass =
-    'inline-flex shrink-0 min-h-10 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45'
+    'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45'
 
   const toneClass =
     tone === 'sky'
@@ -591,9 +591,9 @@ export function BrixEditorPage() {
     <div className="flex min-h-[100dvh] flex-col font-sans text-slate-100">
       <header className="relative z-20 border-b border-slate-800/80 bg-slate-950/88 px-3 py-3 backdrop-blur-xl md:px-4">
         <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="flex shrink-0 size-12 sm:size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
+              <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
                 <img
                   alt="BrixCI logo"
                   className="size-full object-contain"
@@ -604,7 +604,7 @@ export function BrixEditorPage() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold leading-tight">{text.appTitle}</h1>
-                <p className="hidden text-sm text-slate-400 sm:block">{text.appSubtitle}</p>
+                <p className="text-sm text-slate-400">{text.appSubtitle}</p>
               </div>
             </div>
 
@@ -627,8 +627,8 @@ export function BrixEditorPage() {
             </label>
           </div>
 
-          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-3 px-3 md:mx-0 md:px-0 md:pb-0 md:flex-wrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
               <ToolbarMenu icon={<Plus size={14} />} label={text.groupCreate}>
                 {(closeMenu) => (
                   <>
@@ -787,22 +787,20 @@ export function BrixEditorPage() {
               </ToolbarMenu>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-3 px-3 md:mx-0 md:px-0 md:pb-0 lg:justify-end md:flex-wrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
               <MetricPill icon={<Workflow size={13} />}>
-                <span className="whitespace-nowrap">{text.nodes}: {graph.nodes.length}</span>
+                {text.nodes}: {graph.nodes.length}
               </MetricPill>
               <MetricPill icon={<GitBranch size={13} />}>
-                <span className="whitespace-nowrap">{text.edges}: {graph.edges.length}</span>
+                {text.edges}: {graph.edges.length}
               </MetricPill>
               <MetricPill
                 icon={<ShieldCheck size={13} />}
                 tone={errorCount > 0 ? 'danger' : 'success'}
               >
-                <span className="whitespace-nowrap">{errorCount} / {warningCount} {text.errorsAndWarnings}</span>
+                {errorCount} / {warningCount} {text.errorsAndWarnings}
               </MetricPill>
-              <MetricPill icon={<CheckCircle2 size={13} />}>
-                <span className="whitespace-nowrap">{text.autosaveOn}</span>
-              </MetricPill>
+              <MetricPill icon={<CheckCircle2 size={13} />}>{text.autosaveOn}</MetricPill>
             </div>
           </div>
         </div>
