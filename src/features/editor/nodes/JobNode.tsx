@@ -50,7 +50,7 @@ export function JobNode({ id, data, selected }: NodeProps<JobFlowNode>) {
 
   return (
     <div
-      className={`grid min-w-[280px] max-w-[340px] gap-2 rounded-xl border bg-slate-900/95 p-3.5 shadow-xl backdrop-blur-md ${
+      className={`grid min-w-[280px] max-w-[340px] gap-3 rounded-2xl border bg-slate-900/95 p-5 shadow-xl backdrop-blur-md ${
         selected ? 'border-amber-400 ring-1 ring-amber-300/50' : 'border-slate-700'
       }`}
     >
