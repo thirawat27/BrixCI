@@ -150,7 +150,7 @@ function ToolbarMenu({
     <div className="relative" ref={menuRef}>
       <button
         aria-expanded={open}
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110"
+        className="inline-flex shrink-0 min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110"
         onClick={() => {
           setOpen((current) => !current)
         }}
@@ -359,7 +359,7 @@ function iconButtonClass(
   tone: 'sky' | 'amber' | 'emerald' | 'neutral' | 'success' | 'danger' = 'neutral',
 ): string {
   const baseClass =
-    'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45'
+    'inline-flex shrink-0 min-h-10 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45'
 
   const toneClass =
     tone === 'sky'
@@ -591,9 +591,9 @@ export function BrixEditorPage() {
     <div className="flex min-h-[100dvh] flex-col font-sans text-slate-100">
       <header className="relative z-20 border-b border-slate-800/80 bg-slate-950/88 px-3 py-3 backdrop-blur-xl md:px-4">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
+              <div className="flex shrink-0 size-12 sm:size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
                 <img
                   alt="BrixCI logo"
                   className="size-full object-contain"
@@ -604,7 +604,7 @@ export function BrixEditorPage() {
               </div>
               <div>
                 <h1 className="text-lg font-semibold leading-tight">{text.appTitle}</h1>
-                <p className="text-sm text-slate-400">{text.appSubtitle}</p>
+                <p className="hidden text-sm text-slate-400 sm:block">{text.appSubtitle}</p>
               </div>
             </div>
 
@@ -627,8 +627,8 @@ export function BrixEditorPage() {
             </label>
           </div>
 
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-3 px-3 md:mx-0 md:px-0 md:pb-0 md:flex-wrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <ToolbarMenu icon={<Plus size={14} />} label={text.groupCreate}>
                 {(closeMenu) => (
                   <>
@@ -787,20 +787,22 @@ export function BrixEditorPage() {
               </ToolbarMenu>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-3 px-3 md:mx-0 md:px-0 md:pb-0 lg:justify-end md:flex-wrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <MetricPill icon={<Workflow size={13} />}>
-                {text.nodes}: {graph.nodes.length}
+                <span className="whitespace-nowrap">{text.nodes}: {graph.nodes.length}</span>
               </MetricPill>
               <MetricPill icon={<GitBranch size={13} />}>
-                {text.edges}: {graph.edges.length}
+                <span className="whitespace-nowrap">{text.edges}: {graph.edges.length}</span>
               </MetricPill>
               <MetricPill
                 icon={<ShieldCheck size={13} />}
                 tone={errorCount > 0 ? 'danger' : 'success'}
               >
-                {errorCount} / {warningCount} {text.errorsAndWarnings}
+                <span className="whitespace-nowrap">{errorCount} / {warningCount} {text.errorsAndWarnings}</span>
               </MetricPill>
-              <MetricPill icon={<CheckCircle2 size={13} />}>{text.autosaveOn}</MetricPill>
+              <MetricPill icon={<CheckCircle2 size={13} />}>
+                <span className="whitespace-nowrap">{text.autosaveOn}</span>
+              </MetricPill>
             </div>
           </div>
         </div>
@@ -808,8 +810,8 @@ export function BrixEditorPage() {
 
       {status && <StatusToast status={status} />}
 
-      <div className="grid flex-1 min-h-0 grid-cols-1 xl:grid-cols-[18.5rem_minmax(0,1fr)_24rem]">
-        <aside className="space-y-3 overflow-auto border-b border-slate-800/80 bg-slate-900/55 p-3 xl:border-b-0 xl:border-r">
+      <div className="flex flex-1 flex-col min-h-0 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)_17rem] xl:grid-cols-[18.5rem_minmax(0,1fr)_24rem]">
+        <aside className="order-2 lg:order-none max-h-[45vh] lg:max-h-none space-y-3 overflow-auto border-t border-slate-800/80 bg-slate-900/55 p-3 lg:border-t-0 lg:border-r">
           <WorkflowPanel />
           <section className={panelBlockClass}>
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -821,16 +823,16 @@ export function BrixEditorPage() {
           <IssuesPanel />
         </aside>
 
-        <main className="min-h-[62svh] min-w-0 bg-slate-950/35 p-2 xl:min-h-0 xl:p-3">
-          <div className="glass-card h-full min-h-[62svh] overflow-hidden border-slate-800/80 bg-slate-950/75 xl:min-h-0">
-          <EditorCanvas />
+        <main className="order-1 lg:order-none flex-1 lg:min-h-0 min-h-[60svh] bg-slate-950/35 p-2 lg:p-3 flex flex-col">
+          <div className="glass-card flex-1 overflow-hidden border-slate-800/80 bg-slate-950/75">
+            <EditorCanvas />
           </div>
         </main>
 
-        <aside className="space-y-3 overflow-auto border-t border-slate-800/80 bg-slate-900/55 p-3 xl:border-l xl:border-t-0">
-          <div className="grid grid-cols-2 gap-2 xl:hidden">
+        <aside className="order-3 lg:order-none max-h-[45vh] lg:max-h-none space-y-3 overflow-auto border-t border-slate-800/80 bg-slate-900/55 p-3 lg:border-l lg:border-t-0">
+          <div className="grid grid-cols-2 gap-2 lg:hidden">
             <button
-              className={`rounded-xl border px-2 py-2 text-xs font-semibold ${
+              className={`rounded-xl border px-2 py-2 text-xs font-semibold overflow-hidden text-ellipsis whitespace-nowrap ${
                 rightPanelTab === 'inspector'
                   ? 'border-sky-500/45 bg-sky-900/30 text-slate-100'
                   : 'border-slate-700 bg-slate-900 text-slate-300'
@@ -843,7 +845,7 @@ export function BrixEditorPage() {
               {text.tabInspector}
             </button>
             <button
-              className={`rounded-xl border px-2 py-2 text-xs font-semibold ${
+              className={`rounded-xl border px-2 py-2 text-xs font-semibold overflow-hidden text-ellipsis whitespace-nowrap ${
                 rightPanelTab === 'yaml'
                   ? 'border-sky-500/45 bg-sky-900/30 text-slate-100'
                   : 'border-slate-700 bg-slate-900 text-slate-300'
@@ -857,10 +859,10 @@ export function BrixEditorPage() {
             </button>
           </div>
 
-          <div className={rightPanelTab === 'inspector' ? 'block' : 'hidden xl:block'}>
+          <div className={rightPanelTab === 'inspector' ? 'block' : 'hidden lg:block'}>
             <InspectorPanel />
           </div>
-          <div className={rightPanelTab === 'yaml' ? 'block' : 'hidden xl:block'}>
+          <div className={rightPanelTab === 'yaml' ? 'block' : 'hidden lg:block'}>
             <OutputPanel onCopyYaml={runCopyYaml} />
           </div>
         </aside>

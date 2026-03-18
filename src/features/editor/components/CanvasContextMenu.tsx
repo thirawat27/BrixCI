@@ -31,6 +31,10 @@ interface ContextMenuState {
   x: number
   y: number
   nodeId: string | null
+  quadrant: {
+    x: 'left' | 'right'
+    y: 'top' | 'bottom'
+  }
 }
 
 interface CanvasContextMenuProps {
@@ -43,6 +47,7 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
     x: 0,
     y: 0,
     nodeId: null,
+    quadrant: { x: 'left', y: 'top' }
   })
 
   const { text } = useI18n()
@@ -66,25 +71,24 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
       event.preventDefault()
       event.stopPropagation()
 
-      // Use nativeEvent to get raw unmodified browser coordinates
-      // React's synthetic event can sometimes carry stale/transformed coords
+      // Use browser coordinates directly
       const native = event.nativeEvent
       const rawX = native.clientX
       const rawY = native.clientY
 
-      // Estimated menu dimensions for edge clamping
-      const MENU_WIDTH = 224
-      const MENU_HEIGHT = 400
-      const PAD = 8
-
-      const x = Math.min(rawX, window.innerWidth - MENU_WIDTH - PAD)
-      const y = Math.min(rawY, window.innerHeight - MENU_HEIGHT - PAD)
+      // Determine the screen quadrant to safely pop menus upwards/leftwards without measuring height perfectly
+      const thresholdX = window.innerWidth * 0.6
+      const thresholdY = window.innerHeight * 0.6
 
       setMenu({
         visible: true,
-        x,
-        y,
+        x: rawX,
+        y: rawY,
         nodeId: nodeId ?? null,
+        quadrant: {
+          x: rawX > thresholdX ? 'right' : 'left',
+          y: rawY > thresholdY ? 'bottom' : 'top',
+        }
       })
     },
     []
@@ -294,8 +298,10 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
         <div
           className="fixed z-[9999] min-w-[200px] rounded-xl border border-slate-700 bg-slate-950/95 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
           style={{
-            left: menu.x,
-            top: menu.y,
+            left: menu.quadrant.x === 'left' ? menu.x : 'auto',
+            right: menu.quadrant.x === 'right' ? Math.max(4, window.innerWidth - menu.x) : 'auto',
+            top: menu.quadrant.y === 'top' ? menu.y : 'auto',
+            bottom: menu.quadrant.y === 'bottom' ? Math.max(4, window.innerHeight - menu.y) : 'auto',
           }}
         >
           {menuGroups.map((group, groupIndex) => (

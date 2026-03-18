@@ -93,7 +93,7 @@ function CanvasInner() {
         setSelectedNode(null)
       }}
       colorMode="dark"
-      className="h-full min-h-[62svh] w-full xl:min-h-0"
+      className="h-full min-h-[62svh] w-full lg:min-h-0"
       minZoom={0.2}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
