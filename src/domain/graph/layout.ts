@@ -6,13 +6,13 @@ const GRID_COLUMNS = 4
 const GRID_START_X = 120
 const GRID_START_Y = 120
 const GRID_GAP_X = 340
-const GRID_GAP_Y = 560
+const GRID_GAP_Y = 840
 const OVERLAP_GAP_Y = 40
 
 const NODE_DIMENSIONS: Record<NodeKind, { width: number; height: number }> = {
-  trigger: { width: 272, height: 232 },
-  job: { width: 272, height: 496 },
-  step: { width: 272, height: 520 },
+  trigger: { width: 300, height: 400 },
+  job: { width: 300, height: 700 },
+  step: { width: 300, height: 600 },
 }
 
 function snap(value: number): number {

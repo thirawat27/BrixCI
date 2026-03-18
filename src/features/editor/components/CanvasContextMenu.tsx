@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus,
   Trash2,
@@ -63,11 +64,22 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent, nodeId?: string) => {
       event.preventDefault()
-      
-      // Use screen coordinates directly since menu uses position: fixed
-      const x = event.clientX
-      const y = event.clientY
-      
+      event.stopPropagation()
+
+      // Use nativeEvent to get raw unmodified browser coordinates
+      // React's synthetic event can sometimes carry stale/transformed coords
+      const native = event.nativeEvent
+      const rawX = native.clientX
+      const rawY = native.clientY
+
+      // Estimated menu dimensions for edge clamping
+      const MENU_WIDTH = 224
+      const MENU_HEIGHT = 400
+      const PAD = 8
+
+      const x = Math.min(rawX, window.innerWidth - MENU_WIDTH - PAD)
+      const y = Math.min(rawY, window.innerHeight - MENU_HEIGHT - PAD)
+
       setMenu({
         visible: true,
         x,
@@ -89,13 +101,17 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeMenu()
     }
+    // Close stale menu when a new right-click fires elsewhere
+    const handleNativeContextMenu = () => closeMenu()
 
     window.addEventListener('click', handleClick)
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('contextmenu', handleNativeContextMenu)
 
     return () => {
       window.removeEventListener('click', handleClick)
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('contextmenu', handleNativeContextMenu)
     }
   }, [menu.visible, closeMenu])
 
@@ -274,9 +290,9 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
         {children}
       </div>
 
-      {menu.visible && (
+      {menu.visible && createPortal(
         <div
-          className="fixed z-50 min-w-[200px] rounded-xl border border-slate-700 bg-slate-950/95 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          className="fixed z-[9999] min-w-[200px] rounded-xl border border-slate-700 bg-slate-950/95 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
           style={{
             left: menu.x,
             top: menu.y,
@@ -318,7 +334,8 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
               ))}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

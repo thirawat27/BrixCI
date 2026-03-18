@@ -5,6 +5,7 @@ import type {
   BrixEdge,
   BrixNode,
   CompilationResult,
+  GitHubActionConcurrency,
   GitHubActionJob,
   GitHubActionOnMap,
   GitHubActionStep,
@@ -68,28 +69,26 @@ function normalizeBranchInput(branches: string[]): string[] {
   )
 }
 
-function mergeEventBranches(
-  onMap: GitHubActionOnMap,
-  eventName: 'push' | 'pull_request',
-  branches: string[],
-): void {
-  const normalized = normalizeBranchInput(branches)
-  if (!(eventName in onMap)) {
-    onMap[eventName] = normalized.length > 0 ? { branches: normalized } : {}
-    return
-  }
+function buildTriggerConfig(trigger: TriggerNodeData): Record<string, unknown> {
+  const config: Record<string, unknown> = {}
 
-  const current = onMap[eventName]
-  if (typeof current !== 'object' || current === null) {
-    onMap[eventName] = normalized.length > 0 ? { branches: normalized } : {}
-    return
-  }
+  const branches = normalizeBranchInput(trigger.branches ?? [])
+  const branchesIgnore = normalizeBranchInput(trigger.branchesIgnore ?? [])
+  const paths = normalizeBranchInput(trigger.paths ?? [])
+  const pathsIgnore = normalizeBranchInput(trigger.pathsIgnore ?? [])
+  const tags = normalizeBranchInput(trigger.tags ?? [])
+  const tagsIgnore = normalizeBranchInput(trigger.tagsIgnore ?? [])
+  const types = normalizeBranchInput(trigger.types ?? [])
 
-  const currentBranches = Array.isArray((current as { branches?: unknown }).branches)
-    ? ((current as { branches?: string[] }).branches ?? [])
-    : []
-  const merged = Array.from(new Set([...currentBranches, ...normalized]))
-  onMap[eventName] = merged.length > 0 ? { branches: merged } : {}
+  if (branches.length) config.branches = branches
+  if (branchesIgnore.length) config['branches-ignore'] = branchesIgnore
+  if (paths.length) config.paths = paths
+  if (pathsIgnore.length) config['paths-ignore'] = pathsIgnore
+  if (tags.length) config.tags = tags
+  if (tagsIgnore.length) config['tags-ignore'] = tagsIgnore
+  if (types.length) config.types = types
+
+  return config
 }
 
 function buildOnSection(triggerNodes: TriggerFlowNode[]): GitHubActionOnMap {
@@ -98,21 +97,54 @@ function buildOnSection(triggerNodes: TriggerFlowNode[]): GitHubActionOnMap {
 
   for (const triggerNode of triggerNodes) {
     const trigger = triggerNode.data as TriggerNodeData
+
     switch (trigger.event) {
       case 'push':
       case 'pull_request':
-        mergeEventBranches(onMap, trigger.event, trigger.branches)
+      case 'pull_request_target': {
+        const config = buildTriggerConfig(trigger)
+        if (trigger.event in onMap) {
+          // Merge branches
+          const existing = onMap[trigger.event] as Record<string, unknown>
+          const existBranches = (existing.branches as string[] | undefined) ?? []
+          const newBranches = (config.branches as string[] | undefined) ?? []
+          config.branches = Array.from(new Set([...existBranches, ...newBranches]))
+            .filter(Boolean)
+        }
+        onMap[trigger.event] = Object.keys(config).length ? config : null
         break
+      }
       case 'workflow_dispatch':
         onMap.workflow_dispatch = {}
         break
+      case 'workflow_call':
+        onMap.workflow_call = {}
+        break
+      case 'workflow_run': {
+        const workflows = normalizeBranchInput(trigger.workflows ?? [])
+        const types = normalizeBranchInput(trigger.types ?? [])
+        onMap.workflow_run = {
+          ...(workflows.length ? { workflows } : {}),
+          ...(types.length ? { types } : { types: ['completed'] }),
+        }
+        break
+      }
       case 'schedule': {
         const cron = trigger.cron.trim() || '0 0 * * *'
         scheduleEntries.push({ cron })
         break
       }
-      default:
+      case 'release': {
+        const types = normalizeBranchInput(trigger.types ?? [])
+        onMap.release = types.length ? { types } : { types: ['published'] }
         break
+      }
+      default: {
+        // Generic event — just mark as enabled
+        const config = buildTriggerConfig(trigger)
+        onMap[trigger.event] = Object.keys(config).length ? config : null
+        break
+      }
     }
   }
 
@@ -194,13 +226,24 @@ function sortStepsForJob(
 
 function toYamlStep(stepData: StepNodeData): GitHubActionStep {
   const env = sanitizeStringMap(stepData.env)
+  const timeoutMinutes = stepData.timeoutMinutes?.trim()
+  const timeoutNum = timeoutMinutes ? parseInt(timeoutMinutes, 10) : undefined
+
+  const base: GitHubActionStep = {
+    ...(stepData.stepId?.trim() ? { id: stepData.stepId.trim() } : {}),
+    name: stepData.label.trim() || undefined,
+    ...(stepData.ifCondition?.trim() ? { if: stepData.ifCondition.trim() } : {}),
+    ...(stepData.workingDirectory?.trim() ? { 'working-directory': stepData.workingDirectory.trim() } : {}),
+    ...(stepData.shell?.trim() ? { shell: stepData.shell.trim() } : {}),
+    ...(timeoutNum && !isNaN(timeoutNum) ? { 'timeout-minutes': timeoutNum } : {}),
+    ...(stepData.continueOnError ? { 'continue-on-error': true } : {}),
+    env,
+  }
 
   if (stepData.mode === 'run') {
-    const command = stepData.runCommand.trim() || 'echo "No command defined"'
     return {
-      name: stepData.label.trim() || undefined,
-      run: command,
-      env,
+      ...base,
+      run: stepData.runCommand.trim() || 'echo "No command defined"',
     }
   }
 
@@ -214,10 +257,9 @@ function toYamlStep(stepData: StepNodeData): GitHubActionStep {
     Object.keys(withParams).length > 0 ? (withParams as Record<string, string>) : undefined
 
   return {
-    name: stepData.label.trim() || undefined,
+    ...base,
     uses,
     with: withSection,
-    env,
   }
 }
 
@@ -270,19 +312,52 @@ export function compileGraphToYaml(
 
     const env = sanitizeStringMap(jobData.env)
     const matrix = sanitizeMatrix(jobData.strategyMatrix)
+    const maxParallelNum = jobData.strategyMaxParallel?.trim()
+      ? parseInt(jobData.strategyMaxParallel.trim(), 10)
+      : undefined
     const strategy = matrix
       ? {
           matrix,
           'fail-fast': jobData.strategyFailFast,
+          ...(maxParallelNum && !isNaN(maxParallelNum) ? { 'max-parallel': maxParallelNum } : {}),
         }
       : undefined
+
+    const timeoutNum = jobData.timeoutMinutes?.trim()
+      ? parseInt(jobData.timeoutMinutes.trim(), 10)
+      : undefined
+
+    const permissions = sanitizeStringMap(jobData.permissions ?? {})
+    const outputs = sanitizeStringMap(jobData.outputs ?? {})
+
+    const concurrency: GitHubActionConcurrency | undefined = jobData.concurrencyGroup?.trim()
+      ? {
+          group: jobData.concurrencyGroup.trim(),
+          'cancel-in-progress': jobData.concurrencyCancelInProgress,
+        }
+      : undefined
+
+    const environmentConfig = jobData.environment?.trim()
+      ? jobData.environmentUrl?.trim()
+        ? { name: jobData.environment.trim(), url: jobData.environmentUrl.trim() }
+        : jobData.environment.trim()
+      : undefined
+
+    const container = jobData.container?.trim() || undefined
 
     jobs[yamlJobId] = {
       name: jobData.label.trim() || undefined,
       'runs-on': jobData.runsOn.trim() || 'ubuntu-latest',
       needs: needs.length > 0 ? Array.from(new Set(needs)) : undefined,
+      ...(environmentConfig ? { environment: environmentConfig } : {}),
+      ...(concurrency ? { concurrency } : {}),
+      ...(permissions ? { permissions } : {}),
+      ...(timeoutNum && !isNaN(timeoutNum) ? { 'timeout-minutes': timeoutNum } : {}),
+      ...(jobData.continueOnError ? { 'continue-on-error': true } : {}),
+      ...(container ? { container } : {}),
       env,
       strategy,
+      ...(outputs ? { outputs } : {}),
       steps: yamlSteps,
     }
   }

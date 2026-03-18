@@ -1,5 +1,6 @@
 export {
   NODE_KINDS,
+  RUNNER_LABELS,
   STEP_MODES,
   TRIGGER_EVENTS,
   type BrixEdge,

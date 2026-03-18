@@ -1,63 +1,93 @@
-# 🚀 Brix CI
+# 🚀 Brix CI: The Ultimate Visual GitHub Actions Builder
 
-BrixCI is an advanced visual continuous integration and continuous deployment builder explicitly designed for GitHub Actions 🛠️ Through an intuitive drag and drop interface users can craft complex automation pipelines without writing a single line of YAML by hand 🖱️ The ultimate goal of this project is to simplify workflow generation whilst reducing syntax errors drastically 🎯
+BrixCI is an advanced, graph-based visual builder designed specifically for **GitHub Actions**. It allows developers to craft complex CI/CD automation pipelines through an intuitive drag-and-drop interface, without manually writing deeply nested YAML files. 
 
-## 🎯 Architecture and System Overview
+Our ultimate goals are to drastically reduce YAML syntax errors, uncover advanced GitHub Actions features normally hidden in documentation, and make CI/CD accessible to everyone.
 
-The core foundation relies on a strict separation of concerns between domain logic and user interface presentation ensures stability and predictability when compiling valid outputs ✨
-
-### 1 Project Structure and Responsibilities
-* `src/domain/compiler` Handles the orchestration of validations and generates the final GitHub Actions YAML schema 📝
-* `src/domain/graph` Acts as the single source of truth for all node structures and enforces Directed Acyclic Graph rules along with topological sorting algorithms 🧠
-* `src/domain/templates` Provides default graph patterns for first time users ensuring a smooth onboarding experience 🚀
-* `src/features/editor` Manages the entire visual presentation layer and custom node components rendered via React Flow 🎨
-* `src/store/editorStore.ts` Utilizes Zustand to store runtime state and manage user interactions such as adding nodes or linking them together 💾
-* `src/lib/download.ts` Packs utility functions allowing seamless browser based file downloads 📥
-
-### 2 Graph Constraints and Rules
-To prevent users from generating invalid YAML configurations the system enforces rigid connection rules 🛡️
-
-* The platform supports three distinct node types Trigger Job and Step 📦
-* We exclusively allow specific connection pathways Trigger to Job Job to Job Job to Step and Step to Step 🔗
-* Any connection attempt falling outside these parameters is instantly rejected ❌
-* Every individual Step must maintain a strict parent reference to a specific Job When a user draws a line from a Job to a Step the system automatically establishes this ownership Step to Step connections are thus strictly fenced within their designated Job context 🔒
-
-### 3 Automated Validation Strategy
-Validation algorithms trigger automatically after every state mutation ensuring real time feedback ⚡
-
-* Structural Checks Verify the existence of all referenced nodes and intercept invalid edge formations 🏗️
-* Semantic Checks Identify conflicting job IDs or floating Steps lacking a parent Job 🔍
-* Graph Traversal Detect infinite loops and circular dependencies ruining workflow execution 🔄
-* Quality Assurance Flags orphaned Jobs without any incoming connections or empty Jobs containing zero Steps ⚠️
-All detected issues stream directly to the user interface providing instant actionable warnings 🚨
-
-### 4 Compilation Pipeline
-Transforming the visual canvas into deployable YAML follows a rigorous sequential process ⚙️
-
-1 Re evaluate the entire graph to guarantee zero critical errors exist 🚦
-2 Assemble the foundational trigger section using data gathered from Trigger nodes 🎯
-3 Organize Jobs sequentially using topological sorting or fall back to canvas coordinates if necessary 📋
-4 Sequence Steps within each respective Job applying topological sorting once more 🔢
-5 Translate all parsed objects into well formatted YAML text ready for deployment 📄
-
-### 5 State Memory and Time Travel
-* The engine captures periodic snapshots of the graph state to support robust undo and redo mechanics ⏪
-* We impose reasonable limits on the memory stack to preserve browser performance and prevent lag 💻
-* Upon restoring any previous snapshot the application immediately runs a full validation pass guaranteeing accuracy 🛡️
-
-### 6 Technologies Under The Hood
-* React TypeScript and Vite deliver a blazing fast developer experience 🏎️
-* React Flow powers the interactive canvas and node manipulation mechanics ⚛️
-* Zustand provides an elegant and highly performant state management solution 📦
-* js yaml facilitates perfect serialization of JavaScript objects into YAML formats 📜
-* Tailwind CSS ensures a modern beautiful and highly responsive design aesthetic 🌈
-
-## 💻 Developer Commands
-
-* `npm run dev` Spins up the local development environment 🚀
-* `npm run build` Executes TypeScript type checking and generates optimized production assets 🛠️
-* `npm run lint` Analyzes the codebase using ESLint to catch potential styling or logic issues 🧹
-* `npm run test` Runs the automated test suites via Vitest ensuring core logic remains intact 🧪
+![BrixCI Interface](https://img.shields.io/badge/Status-Active-success)
 
 ---
-Built from the ground up to make GitHub Actions workflow creation a delightful and error free experience 🎉
+
+## 🌟 Why BrixCI? (Benefits)
+
+* **No More YAML Indentation Hell**: Say goodbye to spending hours debugging invisible space/tab indentation errors.
+* **Discover Hidden Features**: We bring advanced properties (like `concurrency`, `permissions`, `continue-on-error`, and multiple specific triggers) directly to the UI, unlocking powerful features you might not have known existed.
+* **Real-time Validation & Feedback**: BrixCI validates your structural logic instantly. It warns you about cycle detections, orphaned jobs, missing triggers, or invalid edges *before* you even try to commit.
+* **Seamless Import/Export**: Got an existing `.yml` file? Just import it! BrixCI's intelligent compiler can parse complex YAML files and immediately generate a beautiful visual graph.
+* **100% Client-side**: Everything runs locally in your browser. No server processing required.
+
+---
+
+## 📖 User Manual & Features
+
+BrixCI utilizes a **Node-based architecture** consisting of three core node types: **Trigger**, **Job**, and **Step**.
+
+### 1. Trigger Nodes (The "When")
+Triggers define *when* your pipeline should run.
+* **Full Event Support**: Supports all 22+ GitHub Actions events including `push`, `pull_request`, `release`, `workflow_dispatch`, `schedule`, `workflow_run`, and many more.
+* **Advanced Filters**: You can specify exact constraints:
+  * `branches` and `branches-ignore` (e.g., run only on `main`)
+  * `paths` and `paths-ignore` (e.g., skip deployments if only `README.md` changed)
+  * `tags` and `tags-ignore`
+  * `types` (e.g., run only when a Release is `published` or a PR is `opened`)
+* **Cron UI**: Specifically supports inputting Cron syntax for the `schedule` event.
+
+### 2. Job Nodes (The "Where" & "How")
+Jobs represent the environments where your steps run. They can run in parallel or depend on each other.
+* **Runs-on Autocomplete**: Easily switch between environments like `ubuntu-latest`, `windows-latest`, `macos-latest`, or custom runners.
+* **Strategy / Matrix**: Run tests across multiple OS or Language versions simultaneously. Supports `max-parallel` and `fail-fast`.
+* **Environment Variables**: Set pipeline or job-level `env` variables securely.
+* **Concurrency**: Prevent overlapping deployments by assigning a `Concurrency Group` and choosing whether to `Cancel in-progress` runs automatically.
+* **Granular Permissions**: Follow security best practices by narrowing down exactly what scope (e.g., `contents=read`, `pull-requests=write`) the `GITHUB_TOKEN` is permitted to access.
+* **Outputs**: Send outputs out of a Job so subsequent Jobs can use them (e.g., `artifact-id=${{ steps.upload.outputs.id }}`).
+* **Containers & Environments**: Run the entire job inside a specific `Container Image` or bind the job to a GitHub `Environment Name` (to prompt for manual approvals).
+
+### 3. Step Nodes (The "What")
+Steps are the actual commands and actions that get executed sequentially inside a Job.
+* **Actions vs. Commands**: Easily switch between using an external Action (e.g., `actions/checkout@v4`) or running custom Shell Commands (`npm run build`).
+* **Step IDs**: Give steps an ID so other steps/jobs can reference their outputs.
+* **If Conditions**: Control step execution logically. For example, `always() || failure()` to ensure cleanup steps run even if previous steps failed.
+* **Shell & Working Directory**: Override the default shell (e.g., `pwsh`, `python`) or execute commands in a distinct directory (e.g., `./packages/backend`).
+* **Timeouts & Continue-on-Error**: Specify `Timeout (minutes)` to kill hanging processes, and opt to `Continue on error` for non-critical steps (like linting).
+
+---
+
+## 🔗 Connection Rules & Validation
+
+To ensure compilation into a strictly valid GitHub Actions YAML, BrixCI enforces rules in real-time:
+
+1. **Hierarchy**: Triggers connect to Jobs (`Trigger -> Job`). Jobs can connect to other Jobs to define dependencies (`needs:`). Jobs connect to Steps to assign ownership (`Job -> Step`). Steps connect to Steps sequentially inside the same Job.
+2. **Cycle Detection (DAG)**: You cannot create circular dependencies between Jobs.
+3. **Orphan Prevention**: A Job with no trigger connection or no internal Steps will be flagged.
+4. **Step Chains**: Step connections cannot cross borders into other Jobs.
+
+---
+
+## 🚀 Getting Started (Development)
+
+Clone the repository and install dependencies to run the BrixCI editor locally:
+
+```bash
+# Start the local development environment
+npm run dev
+
+# Run TypeScript checking and generate production assets
+npm run build
+
+# Run unit tests via Vitest
+npm run test
+
+# Run ESLint to analyze the codebase
+npm run lint
+```
+
+## 🌐 Supported Languages
+BrixCI comes natively with full i18n support. 
+* English (en)
+* Thai (th)
+* Chinese (zh)
+
+Change your preferred language using the globe icon in the navigation bar.
+
+---
+*Built from the ground up to make CI/CD pipelines accessible, delightful, and error-free.* 🎉

@@ -83,6 +83,34 @@ export interface UiDictionary {
   resetConfirm: string
   validatePassed: string
   validateFailed: string
+
+  // New features
+  advancedControl: string
+  environmentVars: string
+  stepIdOptional: string
+  ifCondition: string
+  timeoutMinutes: string
+  continueOnError: string
+  workingDirectory: string
+  shell: string
+  strategyMatrix: string
+  maxParallel: string
+  concurrencyGroup: string
+  concurrencyCancelInProgress: string
+  permissions: string
+  permissionsHelp: string
+  outputs: string
+  outputsHelp: string
+  containerImage: string
+  environmentName: string
+  environmentUrl: string
+  branchesIgnore: string
+  paths: string
+  pathsIgnore: string
+  tags: string
+  tagsIgnore: string
+  types: string
+  workflows: string
 }
 
 export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
@@ -167,6 +195,32 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     resetConfirm: 'Reset the current graph? This action cannot be undone.',
     validatePassed: 'Validation passed with no blocking errors.',
     validateFailed: 'Validation found blocking errors.',
+    advancedControl: 'Conditions & Control',
+    environmentVars: 'Environment Variables',
+    stepIdOptional: 'Step ID (optional)',
+    ifCondition: 'if condition',
+    timeoutMinutes: 'Timeout (minutes)',
+    continueOnError: 'Continue on error',
+    workingDirectory: 'Working Directory',
+    shell: 'Shell',
+    strategyMatrix: 'Strategy / Matrix',
+    maxParallel: 'Max Parallel',
+    concurrencyGroup: 'Concurrency Group',
+    concurrencyCancelInProgress: 'Cancel in-progress',
+    permissions: 'Permissions',
+    permissionsHelp: 'Scope = read | write | none',
+    outputs: 'Outputs',
+    outputsHelp: 'key=expression',
+    containerImage: 'Container Image',
+    environmentName: 'Environment Name',
+    environmentUrl: 'Environment URL',
+    branchesIgnore: 'Branches Ignore',
+    paths: 'Paths',
+    pathsIgnore: 'Paths Ignore',
+    tags: 'Tags',
+    tagsIgnore: 'Tags Ignore',
+    types: 'Types',
+    workflows: 'Workflows',
   },
   th: {
     languageName: 'ไทย',
@@ -249,6 +303,32 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     resetConfirm: 'ต้องการรีเซ็ตกราฟปัจจุบันหรือไม่? การกระทำนี้ย้อนกลับไม่ได้',
     validatePassed: 'ตรวจสอบผ่าน ไม่มีข้อผิดพลาดที่บล็อกการทำงาน',
     validateFailed: 'พบข้อผิดพลาดที่ต้องแก้ก่อนดำเนินการต่อ',
+    advancedControl: 'เงื่อนไขและควบคุม',
+    environmentVars: 'ตัวแปรสภาพแวดล้อมระบบ',
+    stepIdOptional: 'Step ID (เลือกใส่)',
+    ifCondition: 'if condition (เงื่อนไข)',
+    timeoutMinutes: 'หมดเวลา (นาที)',
+    continueOnError: 'รันต่อเมื่อมีข้อผิดพลาด',
+    workingDirectory: 'Working Directory',
+    shell: 'Shell ประมวลผล',
+    strategyMatrix: 'กลยุทธ์การรัน (Strategy / Matrix)',
+    maxParallel: 'รันขนานสูงสุด',
+    concurrencyGroup: 'กลุ่มงานคู่ขนาน (Concurrency)',
+    concurrencyCancelInProgress: 'ยกเลิกอันเก่าที่ค้างอยู่',
+    permissions: 'สิทธิ์การเข้าถึง (Permissions)',
+    permissionsHelp: 'ขอบเขต = read | write | none',
+    outputs: 'ค่าที่ส่งออก (Outputs)',
+    outputsHelp: 'key=expression',
+    containerImage: 'Container Image',
+    environmentName: 'ชื่อ Environment',
+    environmentUrl: 'URL อ้างอิง Environment',
+    branchesIgnore: 'สาขาที่ละเว้น',
+    paths: 'เส้นทางไฟล์ (Paths)',
+    pathsIgnore: 'ไฟล์ที่ละเว้น (Paths Ignore)',
+    tags: 'แท็ก (Tags)',
+    tagsIgnore: 'แท็กที่ละเว้น',
+    types: 'ประเภทของอีเวนต์',
+    workflows: 'อ้างอิง Workflow',
   },
   zh: {
     languageName: '中文',
@@ -330,6 +410,32 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     resetConfirm: '确定重置当前图吗？此操作无法撤销。',
     validatePassed: '校验通过，没有阻塞性错误。',
     validateFailed: '校验发现阻塞性错误。',
+    advancedControl: '条件与控制',
+    environmentVars: '环境变量',
+    stepIdOptional: 'Step ID (可选)',
+    ifCondition: '如果不成立条件 (if)',
+    timeoutMinutes: '超时时间 (分钟)',
+    continueOnError: '继续运行遇到错误',
+    workingDirectory: '工作目录',
+    shell: '脚本解释器 (Shell)',
+    strategyMatrix: '执行策略 / 矩阵',
+    maxParallel: '最大并发限制',
+    concurrencyGroup: '并发分组控制',
+    concurrencyCancelInProgress: '取消进行中的任务',
+    permissions: '节点权限 (Permissions)',
+    permissionsHelp: '作用域 = read | write | none',
+    outputs: '输出变量 (Outputs)',
+    outputsHelp: 'key=expression',
+    containerImage: '容器镜像',
+    environmentName: '环境名称',
+    environmentUrl: '环境链接地址',
+    branchesIgnore: '忽略分支',
+    paths: '触发路径',
+    pathsIgnore: '忽略路径',
+    tags: '触发标签',
+    tagsIgnore: '忽略标签',
+    types: '事件类型 (Types)',
+    workflows: '相关流水线 (Workflows)',
   },
 }
 

@@ -14,7 +14,14 @@ export const DEFAULT_TRIGGER_DATA: TriggerNodeData = {
   label: 'Code Push',
   event: 'push',
   branches: ['main'],
+  branchesIgnore: [],
+  paths: [],
+  pathsIgnore: [],
+  tags: [],
+  tagsIgnore: [],
   cron: '0 0 * * *',
+  workflows: [],
+  types: [],
 }
 
 export const DEFAULT_JOB_DATA: JobNodeData = {
@@ -25,6 +32,18 @@ export const DEFAULT_JOB_DATA: JobNodeData = {
   env: {},
   strategyMatrix: {},
   strategyFailFast: true,
+  strategyMaxParallel: '',
+  timeoutMinutes: '',
+  continueOnError: false,
+  concurrencyGroup: '',
+  concurrencyCancelInProgress: false,
+  permissions: {},
+  outputs: {},
+  defaults: '',
+  container: '',
+  services: '',
+  environment: '',
+  environmentUrl: '',
 }
 
 export const DEFAULT_STEP_DATA: StepNodeData = {
@@ -36,6 +55,12 @@ export const DEFAULT_STEP_DATA: StepNodeData = {
   withParams: {},
   env: {},
   jobNodeId: '',
+  stepId: '',
+  ifCondition: '',
+  timeoutMinutes: '',
+  continueOnError: false,
+  workingDirectory: '',
+  shell: '',
 }
 
 export function createTriggerNode(

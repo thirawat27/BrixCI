@@ -7,18 +7,33 @@ import { DEFAULT_WORKFLOW_NAME } from './compileGraph'
 const TRIGGER_X = 80
 const JOB_X = 420
 const STEP_X = 800
-const TRIGGER_VERTICAL_GAP = 170
-const STEP_VERTICAL_GAP = 132
-const MIN_JOB_LANE_HEIGHT = 220
-const LANE_GAP = 40
+const TRIGGER_VERTICAL_GAP = 280
+const STEP_VERTICAL_GAP = 340
+const MIN_JOB_LANE_HEIGHT = 420
+const LANE_GAP = 80
 
 type UnknownRecord = Record<string, unknown>
+
+const ALL_TRIGGER_EVENTS = [
+  'push', 'pull_request', 'pull_request_target', 'workflow_dispatch',
+  'workflow_run', 'workflow_call', 'schedule', 'release', 'create',
+  'delete', 'deployment', 'deployment_status', 'issues', 'issue_comment',
+  'label', 'milestone', 'page_build', 'public', 'registry_package',
+  'repository_dispatch', 'status', 'watch',
+] as const
 
 interface TriggerSpec {
   event: TriggerEvent
   label: string
   branches: string[]
+  branchesIgnore: string[]
+  paths: string[]
+  pathsIgnore: string[]
+  tags: string[]
+  tagsIgnore: string[]
+  types: string[]
   cron: string
+  workflows: string[]
 }
 
 interface StepSpec {
@@ -28,6 +43,12 @@ interface StepSpec {
   actionRef: string
   withParams: Record<string, string>
   env: Record<string, string>
+  stepId: string
+  ifCondition: string
+  timeoutMinutes: string
+  continueOnError: boolean
+  workingDirectory: string
+  shell: string
 }
 
 interface JobSpec {
@@ -38,6 +59,16 @@ interface JobSpec {
   env: Record<string, string>
   strategyMatrix: Record<string, string[]>
   strategyFailFast: boolean
+  strategyMaxParallel: string
+  timeoutMinutes: string
+  continueOnError: boolean
+  concurrencyGroup: string
+  concurrencyCancelInProgress: boolean
+  permissions: Record<string, string>
+  outputs: Record<string, string>
+  container: string
+  environment: string
+  environmentUrl: string
   steps: StepSpec[]
 }
 
@@ -186,7 +217,14 @@ function parseScheduleEntries(value: unknown): TriggerSpec[] {
       event: 'schedule',
       label: createEventLabel('schedule'),
       branches: [],
+      branchesIgnore: [],
+      paths: [],
+      pathsIgnore: [],
+      tags: [],
+      tagsIgnore: [],
+      types: [],
       cron: entry.cron.trim(),
+      workflows: [],
     })
   }
 
@@ -203,13 +241,20 @@ function parseTriggerSpecs(rawOn: unknown): TriggerSpec[] {
       .filter((entry): entry is string => typeof entry === 'string')
       .map((entry) => entry.trim())
       .filter((entry): entry is TriggerEvent =>
-        ['push', 'pull_request', 'workflow_dispatch', 'schedule'].includes(entry),
+        (ALL_TRIGGER_EVENTS as readonly string[]).includes(entry),
       )
       .map((event) => ({
         event,
         label: createEventLabel(event),
         branches: [],
+        branchesIgnore: [],
+        paths: [],
+        pathsIgnore: [],
+        tags: [],
+        tagsIgnore: [],
+        types: [],
         cron: '0 0 * * *',
+        workflows: [],
       }))
   }
 
@@ -222,36 +267,34 @@ function parseTriggerSpecs(rawOn: unknown): TriggerSpec[] {
   const triggers: TriggerSpec[] = []
 
   for (const [eventName, config] of Object.entries(rawOn)) {
-    if (eventName === 'push' || eventName === 'pull_request') {
-      const branches = isRecord(config) ? normalizeStringList(config.branches) : []
-      triggers.push({
-        event: eventName,
-        label: createEventLabel(eventName),
-        branches,
-        cron: '0 0 * * *',
-      })
-      continue
+    if (!(ALL_TRIGGER_EVENTS as readonly string[]).includes(eventName)) {
+      continue // skip unsupported events gracefully
     }
+    const typedEvent = eventName as TriggerEvent
+    const cfg = isRecord(config) ? config : {}
 
-    if (eventName === 'workflow_dispatch') {
-      triggers.push({
-        event: 'workflow_dispatch',
-        label: createEventLabel('workflow_dispatch'),
-        branches: [],
-        cron: '0 0 * * *',
-      })
-      continue
-    }
-
-    if (eventName === 'schedule') {
+    if (typedEvent === 'schedule') {
       triggers.push(...parseScheduleEntries(config))
+      continue
     }
+
+    triggers.push({
+      event: typedEvent,
+      label: createEventLabel(typedEvent),
+      branches: isRecord(cfg) ? normalizeStringList(cfg.branches) : [],
+      branchesIgnore: isRecord(cfg) ? normalizeStringList(cfg['branches-ignore']) : [],
+      paths: isRecord(cfg) ? normalizeStringList(cfg.paths) : [],
+      pathsIgnore: isRecord(cfg) ? normalizeStringList(cfg['paths-ignore']) : [],
+      tags: isRecord(cfg) ? normalizeStringList(cfg.tags) : [],
+      tagsIgnore: isRecord(cfg) ? normalizeStringList(cfg['tags-ignore']) : [],
+      types: isRecord(cfg) ? normalizeStringList(cfg.types) : [],
+      cron: '0 0 * * *',
+      workflows: isRecord(cfg) ? normalizeStringList(cfg.workflows) : [],
+    })
   }
 
   if (triggers.length === 0) {
-    throw new WorkflowImportError(
-      'No supported trigger events found. Supported events: push, pull_request, workflow_dispatch, schedule.',
-    )
+    throw new WorkflowImportError('No supported trigger events found.')
   }
 
   return triggers
@@ -283,6 +326,12 @@ function parseStepSpec(rawStep: unknown, index: number): StepSpec {
       )
     : {}
   const env = parseEnvSection(rawStep.env, `Step "${label}"`)
+  const stepId = typeof rawStep.id === 'string' ? rawStep.id.trim() : ''
+  const ifCondition = typeof rawStep.if === 'string' ? rawStep.if.trim() : ''
+  const timeoutMinutes = rawStep['timeout-minutes'] != null ? String(rawStep['timeout-minutes']) : ''
+  const continueOnError = rawStep['continue-on-error'] === true
+  const workingDirectory = typeof rawStep['working-directory'] === 'string' ? rawStep['working-directory'].trim() : ''
+  const shell = typeof rawStep.shell === 'string' ? rawStep.shell.trim() : ''
 
   if (typeof rawStep.run === 'string' && rawStep.run.trim().length > 0) {
     return {
@@ -292,6 +341,12 @@ function parseStepSpec(rawStep: unknown, index: number): StepSpec {
       actionRef: '',
       withParams: {},
       env,
+      stepId,
+      ifCondition,
+      timeoutMinutes,
+      continueOnError,
+      workingDirectory,
+      shell,
     }
   }
 
@@ -303,6 +358,12 @@ function parseStepSpec(rawStep: unknown, index: number): StepSpec {
       actionRef: rawStep.uses.trim(),
       withParams,
       env,
+      stepId,
+      ifCondition,
+      timeoutMinutes,
+      continueOnError,
+      workingDirectory,
+      shell,
     }
   }
 
@@ -324,9 +385,14 @@ function parseJobSpec(jobId: string, rawJob: unknown): JobSpec {
     )
   }
 
-  if (typeof rawJob['runs-on'] !== 'string' || rawJob['runs-on'].trim().length === 0) {
+  const runsOn = typeof rawJob['runs-on'] === 'string'
+    ? rawJob['runs-on'].trim()
+    : Array.isArray(rawJob['runs-on'])
+      ? (rawJob['runs-on'] as string[]).join(', ')
+      : ''
+  if (!runsOn) {
     throw new WorkflowImportError(
-      `Job "${jobId}" must define "runs-on" as a single runner label string.`,
+      `Job "${jobId}" must define "runs-on".`,
     )
   }
 
@@ -334,6 +400,25 @@ function parseJobSpec(jobId: string, rawJob: unknown): JobSpec {
     ? rawJob.steps.map((step, index) => parseStepSpec(step, index))
     : []
   const strategy = isRecord(rawJob.strategy) ? rawJob.strategy : undefined
+  const concurrency = isRecord(rawJob.concurrency) ? rawJob.concurrency : undefined
+  const permissions = parseEnvSection(rawJob.permissions, `Job "${jobId}" permissions`)
+  const outputs = parseEnvSection(rawJob.outputs, `Job "${jobId}" outputs`)
+
+  const environment = isRecord(rawJob.environment)
+    ? String((rawJob.environment as UnknownRecord).name ?? '')
+    : typeof rawJob.environment === 'string'
+      ? rawJob.environment
+      : ''
+  const environmentUrl = isRecord(rawJob.environment)
+    ? String((rawJob.environment as UnknownRecord).url ?? '')
+    : ''
+  const container = typeof rawJob.container === 'string'
+    ? rawJob.container.trim()
+    : isRecord(rawJob.container)
+      ? String((rawJob.container as UnknownRecord).image ?? '')
+      : ''
+
+  const maxParallel = strategy?.['max-parallel'] != null ? String(strategy['max-parallel']) : ''
 
   return {
     jobId,
@@ -341,11 +426,21 @@ function parseJobSpec(jobId: string, rawJob: unknown): JobSpec {
       typeof rawJob.name === 'string' && rawJob.name.trim().length > 0
         ? rawJob.name.trim()
         : jobId,
-    runsOn: rawJob['runs-on'].trim(),
+    runsOn,
     needs: parseNeeds(rawJob.needs),
     env: parseEnvSection(rawJob.env, `Job "${jobId}"`),
     strategyMatrix: parseMatrixSection(strategy?.matrix, jobId),
     strategyFailFast: typeof strategy?.['fail-fast'] === 'boolean' ? strategy['fail-fast'] : true,
+    strategyMaxParallel: maxParallel,
+    timeoutMinutes: rawJob['timeout-minutes'] != null ? String(rawJob['timeout-minutes']) : '',
+    continueOnError: rawJob['continue-on-error'] === true,
+    concurrencyGroup: typeof concurrency?.group === 'string' ? concurrency.group : '',
+    concurrencyCancelInProgress: concurrency?.['cancel-in-progress'] === true,
+    permissions,
+    outputs,
+    container,
+    environment,
+    environmentUrl,
     steps,
   }
 }
@@ -463,6 +558,12 @@ export function parseWorkflowYaml(source: string): WorkflowImportResult {
             withParams: step.withParams,
             env: step.env,
             jobNodeId,
+            stepId: step.stepId,
+            ifCondition: step.ifCondition,
+            timeoutMinutes: step.timeoutMinutes,
+            continueOnError: step.continueOnError,
+            workingDirectory: step.workingDirectory,
+            shell: step.shell,
           },
         ),
       )

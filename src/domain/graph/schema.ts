@@ -4,9 +4,22 @@ import type { GraphState } from './types'
 const triggerDataSchema = z.object({
   kind: z.literal('trigger'),
   label: z.string(),
-  event: z.enum(['push', 'pull_request', 'workflow_dispatch', 'schedule']),
+  event: z.enum([
+    'push', 'pull_request', 'pull_request_target', 'workflow_dispatch',
+    'workflow_run', 'workflow_call', 'schedule', 'release', 'create',
+    'delete', 'deployment', 'deployment_status', 'issues', 'issue_comment',
+    'label', 'milestone', 'page_build', 'public', 'registry_package',
+    'repository_dispatch', 'status', 'watch',
+  ]),
   branches: z.array(z.string()),
+  branchesIgnore: z.array(z.string()).default([]),
+  paths: z.array(z.string()).default([]),
+  pathsIgnore: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  tagsIgnore: z.array(z.string()).default([]),
   cron: z.string(),
+  workflows: z.array(z.string()).default([]),
+  types: z.array(z.string()).default([]),
 })
 
 const jobDataSchema = z.object({
@@ -17,6 +30,18 @@ const jobDataSchema = z.object({
   env: z.record(z.string(), z.string()),
   strategyMatrix: z.record(z.string(), z.array(z.string())),
   strategyFailFast: z.boolean(),
+  strategyMaxParallel: z.string().default(''),
+  timeoutMinutes: z.string().default(''),
+  continueOnError: z.boolean().default(false),
+  concurrencyGroup: z.string().default(''),
+  concurrencyCancelInProgress: z.boolean().default(false),
+  permissions: z.record(z.string(), z.string()).default({}),
+  outputs: z.record(z.string(), z.string()).default({}),
+  defaults: z.string().default(''),
+  container: z.string().default(''),
+  services: z.string().default(''),
+  environment: z.string().default(''),
+  environmentUrl: z.string().default(''),
 })
 
 const stepDataSchema = z.object({
@@ -28,6 +53,12 @@ const stepDataSchema = z.object({
   withParams: z.record(z.string(), z.string()),
   env: z.record(z.string(), z.string()),
   jobNodeId: z.string(),
+  stepId: z.string().default(''),
+  ifCondition: z.string().default(''),
+  timeoutMinutes: z.string().default(''),
+  continueOnError: z.boolean().default(false),
+  workingDirectory: z.string().default(''),
+  shell: z.string().default(''),
 })
 
 const nodeSchema = z
