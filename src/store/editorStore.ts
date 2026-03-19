@@ -21,6 +21,7 @@ import {
   type StepNodeData,
   isNodeConnectionAllowed,
   resolveGraphOverlaps,
+  applyAutoLayout,
   validateGraph,
   type GraphState,
   type NodeKind,
@@ -80,6 +81,7 @@ interface EditorStoreState {
   undo: () => void
   redo: () => void
   reset: () => void
+  autoLayout: () => void
   replaceGraph: (
     graph: GraphState,
     yamlOutput?: string,
@@ -430,6 +432,17 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       selectedNodeId: null,
       historyPast: [],
       historyFuture: [],
+    })
+  },
+
+  autoLayout: () => {
+    set((state) => {
+      const nextGraph = applyAutoLayout(state.graph, 'LR')
+      return {
+        ...pushHistory(state),
+        graph: nextGraph,
+        issues: validateGraph(nextGraph),
+      }
     })
   },
 

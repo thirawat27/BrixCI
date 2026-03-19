@@ -1,5 +1,6 @@
 import type { XYPosition } from '@xyflow/react'
 import type { BrixNode, GraphState, NodeKind } from './types'
+import dagre from 'dagre'
 
 const SNAP_GRID = 16
 const GRID_COLUMNS = 4
@@ -98,5 +99,50 @@ export function resolveGraphOverlaps(graph: GraphState): GraphState {
   return {
     nodes,
     edges: structuredClone(graph.edges),
+  }
+}
+
+export function applyAutoLayout(graph: GraphState, direction: 'TB' | 'LR' = 'LR'): GraphState {
+  const dagreGraph = new dagre.graphlib.Graph()
+  dagreGraph.setDefaultEdgeLabel(() => ({}))
+  
+  dagreGraph.setGraph({ 
+    rankdir: direction,
+    nodesep: 80,
+    ranksep: 120,
+  })
+
+  // Add nodes to dagre
+  graph.nodes.forEach((node) => {
+    const dim = estimatedNodeDimensions(node)
+    dagreGraph.setNode(node.id, { width: dim.width, height: dim.height })
+  })
+
+  // Add edges to dagre
+  graph.edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target)
+  })
+
+  // Calculate layout
+  dagre.layout(dagreGraph)
+
+  // Apply new positions
+  const newNodes = graph.nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id)
+    const dim = estimatedNodeDimensions(node)
+    
+    // Dagre returns the center point constraint, we need to map to top-left for React Flow
+    return {
+      ...node,
+      position: {
+        x: snap(nodeWithPosition.x - dim.width / 2 + GRID_START_X),
+        y: snap(nodeWithPosition.y - dim.height / 2 + GRID_START_Y),
+      },
+    }
+  })
+
+  return {
+    ...graph,
+    nodes: newNodes,
   }
 }

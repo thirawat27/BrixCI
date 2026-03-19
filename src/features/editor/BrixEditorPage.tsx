@@ -7,6 +7,7 @@ import {
   Copy,
   Download,
   FileCode,
+  Github,
   GitBranch,
   Languages,
   Play,
@@ -21,6 +22,8 @@ import {
 import { EditorCanvas } from './components/EditorCanvas'
 import { compileGraphToYaml, parseWorkflowYaml } from '../../domain/compiler'
 import { parseGraphDraft } from '../../domain/graph'
+import { nodejsTemplateGraph } from '../../domain/templates/nodejs'
+import { dockerTemplateGraph } from '../../domain/templates/docker'
 import type { ValidationIssue } from '../../domain/graph'
 import { useI18n, UI_DICTIONARY, UI_LANGUAGES, type UiLanguage } from '../../i18n'
 import { downloadTextFile } from '../../lib/download'
@@ -509,6 +512,58 @@ export function BrixEditorPage() {
     }
   }
 
+  const runPushToGitHub = async (): Promise<void> => {
+    const content = yamlOutput || runCompile()
+    if (!content) return
+
+    const repo = window.prompt('Enter GitHub Repository (e.g., username/repo):')
+    if (!repo) return
+
+    const token = window.prompt('Enter GitHub Personal Access Token (with repo / workflow scope):')
+    if (!token) return
+
+    setStatus({ tone: 'info', message: 'Pushing to GitHub...' })
+    
+    try {
+      const path = `.github/workflows/${toExportFilename(workflowName, 'yml')}`
+      let sha = ''
+      try {
+        const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: 'application/vnd.github.v3+json'
+          }
+        })
+        if (getRes.ok) {
+          const getData = await getRes.json()
+          sha = getData.sha
+        }
+      } catch {
+        // file doesn't exist, which is fine
+      }
+
+      const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `Update ${workflowName} via BrixCI`,
+          content: btoa(unescape(encodeURIComponent(content))),
+          ...(sha ? { sha } : {})
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to push')
+
+      setStatus({ tone: 'success', message: 'Successfully pushed to GitHub!' })
+    } catch {
+      setStatus({ tone: 'error', message: 'Failed to push to GitHub.' })
+    }
+  }
+
   useEffect(() => {
     const compileForShortcut = (): string | null => {
       const compiled = compile()
@@ -608,7 +663,19 @@ export function BrixEditorPage() {
               </div>
             </div>
 
-            <label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+            <div className="flex items-center gap-3">
+              <a 
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:bg-slate-800 hover:border-slate-500 hover:-translate-y-px"
+                href="https://github.com/thirawat27/BrixCI"
+                rel="noreferrer"
+                target="_blank"
+                title="Star us on GitHub"
+              >
+                <Github size={18} />
+                <span>Star on GitHub</span>
+              </a>
+
+              <label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
               <Languages size={14} />
               <span>{text.language}</span>
               <select
@@ -625,6 +692,7 @@ export function BrixEditorPage() {
                 ))}
               </select>
             </label>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -658,6 +726,41 @@ export function BrixEditorPage() {
                       }}
                     >
                       {text.addStep}
+                    </ToolbarMenuItem>
+                  </>
+                )}
+              </ToolbarMenu>
+
+              <ToolbarMenu icon={<Blocks size={14} />} label={text.templates || 'Templates'}>
+                {(closeMenu) => (
+                  <>
+                    <ToolbarMenuItem
+                      icon={<Blocks size={14} />}
+                      onClick={() => {
+                        if (window.confirm('Load Node.js CI Template? This will replace your current workflow.')) {
+                          replaceGraph(nodejsTemplateGraph, '', 'Node.js CI', {})
+                          setTimeout(() => {
+                            useEditorStore.getState().autoLayout()
+                          }, 100)
+                        }
+                        closeMenu()
+                      }}
+                    >
+                      Node.js CI
+                    </ToolbarMenuItem>
+                    <ToolbarMenuItem
+                      icon={<Blocks size={14} />}
+                      onClick={() => {
+                        if (window.confirm('Load Docker Build & Push Template? This will replace your current workflow.')) {
+                          replaceGraph(dockerTemplateGraph, '', 'Docker Build & Push', {})
+                          setTimeout(() => {
+                            useEditorStore.getState().autoLayout()
+                          }, 100)
+                        }
+                        closeMenu()
+                      }}
+                    >
+                      Docker Build & Push
                     </ToolbarMenuItem>
                   </>
                 )}
@@ -703,6 +806,14 @@ export function BrixEditorPage() {
                       }}
                     >
                       {text.copyYaml}
+                    </ToolbarMenuItem>
+                    <ToolbarMenuItem
+                      icon={<Github size={14} />}
+                      onClick={() => {
+                        void runPushToGitHub().finally(closeMenu)
+                      }}
+                    >
+                      Deploy to GitHub
                     </ToolbarMenuItem>
                   </>
                 )}

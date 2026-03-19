@@ -2,6 +2,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -99,6 +100,15 @@ function CanvasInner() {
       proOptions={{ hideAttribution: true }}
     >
       <Controls position="bottom-left" showInteractive={false} />
+      <MiniMap 
+        nodeColor={(node) => {
+          if (node.type === 'trigger') return '#0ea5e9';
+          if (node.type === 'job') return '#6366f1';
+          return '#0f8a5a';
+        }}
+        maskColor="rgba(2, 6, 23, 0.7)"
+        className="!bg-slate-900/50 !border-slate-800 rounded-lg overflow-hidden"
+      />
       <Background color="rgba(148, 163, 184, 0.22)" gap={18} size={1.2} variant={BackgroundVariant.Dots} />
     </ReactFlow>
   )

@@ -111,6 +111,8 @@ export interface UiDictionary {
   tagsIgnore: string
   types: string
   workflows: string
+  autoLayout: string
+  templates: string
 }
 
 export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
@@ -221,6 +223,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     tagsIgnore: 'Tags Ignore',
     types: 'Types',
     workflows: 'Workflows',
+    autoLayout: 'Auto Layout',
+    templates: 'Templates',
   },
   th: {
     languageName: 'ไทย',
@@ -329,6 +333,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     tagsIgnore: 'แท็กที่ละเว้น',
     types: 'ประเภทของอีเวนต์',
     workflows: 'อ้างอิง Workflow',
+    autoLayout: 'จัดเรียงอัตโนมัติ',
+    templates: 'เทมเพลต',
   },
   zh: {
     languageName: '中文',
@@ -436,6 +442,8 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     tagsIgnore: '忽略标签',
     types: '事件类型 (Types)',
     workflows: '相关流水线 (Workflows)',
+    autoLayout: '自动布局',
+    templates: '模板',
   },
 }
 

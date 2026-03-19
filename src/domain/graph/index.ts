@@ -27,4 +27,4 @@ export {
 } from './types'
 export { isNodeConnectionAllowed, validateGraph, hasBlockingIssues } from './validation'
 export { parseGraphDraft, parseGraphState } from './schema'
-export { nextNodePosition, resolveGraphOverlaps } from './layout'
+export { nextNodePosition, resolveGraphOverlaps, applyAutoLayout } from './layout'

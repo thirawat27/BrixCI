@@ -11,6 +11,7 @@ import {
   Undo2,
   Redo2,
   MousePointer2,
+  LayoutDashboard,
 } from 'lucide-react'
 import type { NodeKind } from '../../../domain/graph'
 import { useEditorStore } from '../../../store/editorStore'
@@ -59,6 +60,7 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
   const undo = useEditorStore((state) => state.undo)
   const redo = useEditorStore((state) => state.redo)
   const reset = useEditorStore((state) => state.reset)
+  const autoLayout = useEditorStore((state) => state.autoLayout)
   const validate = useEditorStore((state) => state.validate)
   const compile = useEditorStore((state) => state.compile)
   const historyPastCount = useEditorStore((state) => state.historyPast.length)
@@ -248,6 +250,16 @@ export function CanvasContextMenuProvider({ children }: CanvasContextMenuProps) 
     // Canvas actions
     const canvasActions: ContextMenuItem[] = !isNodeMenu
       ? [
+          {
+            id: 'auto-layout',
+            label: text.autoLayout || 'Auto Layout (Dagre)',
+            icon: <LayoutDashboard size={14} />,
+            shortcut: 'Ctrl+L',
+            action: () => {
+              autoLayout()
+              closeMenu()
+            },
+          },
           {
             id: 'fit-view',
             label: text.fitView || 'Fit View',
