@@ -113,6 +113,12 @@ export interface UiDictionary {
   workflows: string
   autoLayout: string
   templates: string
+  learningTitle: string
+  learningSubtitle: string
+  learningTrigger: string
+  learningJob: string
+  learningStep: string
+  learningWhatIsThis: string
 }
 
 export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
@@ -225,6 +231,12 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     workflows: 'Workflows',
     autoLayout: 'Auto Layout',
     templates: 'Templates',
+    learningTitle: '🎓 New to CI/CD?',
+    learningSubtitle: 'Start by clicking "+ Create" at the top to add a Trigger. CI/CD is just a way to automate testing and deploying your code. Click on any node to learn more about it!',
+    learningTrigger: '🟢 Trigger (When): This tells GitHub when to run your workflow. For example, "push" means run whenever someone pushes new code. Think of it as the starting pistol.',
+    learningJob: '🟦 Job (Where): This is the computer/server where your tasks run. A job can have many steps. Think of it as renting a fresh computer in the cloud for a few minutes.',
+    learningStep: '⬜ Step (What): A specific task to run. It can be a command like "npm test" or a pre-made GitHub Action. Think of this as giving your computer a specific command to type.',
+    learningWhatIsThis: 'What is this?',
   },
   th: {
     languageName: 'ไทย',
@@ -335,6 +347,12 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     workflows: 'อ้างอิง Workflow',
     autoLayout: 'จัดเรียงอัตโนมัติ',
     templates: 'เทมเพลต',
+    learningTitle: '🎓 เพิ่งเริ่มรู้จัก CI/CD?',
+    learningSubtitle: 'เริ่มต้นด้วยการคลิก "+ สร้างโหนด" ด้านบน แล้วเลือกเพิ่ม Trigger. เครื่องมือ CI/CD จะช่วยรันคำสั่งต่างๆ แทนคุณอัตโนมัติ ลองคลิกที่โหนดเพื่อดูคำอธิบายเพิ่มเติม!',
+    learningTrigger: '🟢 Trigger (เมื่อไหร่): ตัวกำหนดว่าให้ GitHub เริ่มทำงานตอนไหน ตัวอย่างเช่น "push" คือรันเมื่อมีคนส่งโค้ดใหม่เข้ามา.',
+    learningJob: '🟦 Job (ที่ไหน): เปรียบเสมือนเครื่องคอมพิวเตอร์ที่ใช้ในการรันคำสั่ง Job จะประกอบด้วยหลายๆ Step รวมกัน.',
+    learningStep: '⬜ Step (ทำอะไร): คำสั่งสั่งงานจริงๆ เช่นคำสั่ง "npm test" เพื่อเทสโค้ด หรือโหลดคำสั่งสำเร็จรูปจาก GitHub Action มาใช้งาน.',
+    learningWhatIsThis: 'สิ่งนี้คืออะไร?',
   },
   zh: {
     languageName: '中文',
@@ -444,6 +462,12 @@ export const UI_DICTIONARY: Record<UiLanguage, UiDictionary> = {
     workflows: '相关流水线 (Workflows)',
     autoLayout: '自动布局',
     templates: '模板',
+    learningTitle: '🎓 初识 CI/CD?',
+    learningSubtitle: '请点击顶部的 “创建节点” 并添加 Trigger。CI/CD 是用于自动化测试和部署代码的工具。点击任何节点即可了解其作用！',
+    learningTrigger: '🟢 Trigger (何时): 这会告诉 GitHub 什么时候运行您的流水线。例如，“push” 表示当有人推送新代码时运行。',
+    learningJob: '🟦 Job (地点): 您的任务将在哪台计算机/服务器上运行。一个作业可以包含许多步骤。',
+    learningStep: '⬜ Step (什么任务): 要运行的具体任务。它可以是像 "npm test" 这样的命令，或现成的 GitHub Action。',
+    learningWhatIsThis: '这是什么意思?',
   },
 }
 

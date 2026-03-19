@@ -10,6 +10,7 @@ import {
   Github,
   GitBranch,
   Languages,
+  LogIn,
   Play,
   Plus,
   Redo2,
@@ -29,6 +30,10 @@ import { useI18n, UI_DICTIONARY, UI_LANGUAGES, type UiLanguage } from '../../i18
 import { downloadTextFile } from '../../lib/download'
 import { formatKeyValueLines, parseKeyValueLines } from '../../lib/textMaps'
 import { useEditorStore } from '../../store/editorStore'
+import { useAuthStore } from '../../store/authStore'
+import { LoginModal } from '../auth/LoginModal'
+import { UserMenu } from '../auth/UserMenu'
+import { DeployModal } from '../auth/DeployModal'
 
 const DRAFT_STORAGE_KEY = 'brixci-editor-draft-v1'
 
@@ -290,12 +295,40 @@ function InspectorPanel() {
   const removeSelectedNode = useEditorStore((state) => state.removeSelectedNode)
   const { text } = useI18n()
 
+  const getNodeHelp = (type: string) => {
+    switch(type) {
+      case 'trigger': return text.learningTrigger
+      case 'job': return text.learningJob
+      case 'step': return text.learningStep
+      default: return ''
+    }
+  }
+
   return (
     <section className={panelBlockClass}>
       <h2 className="mb-2 text-sm font-semibold text-slate-100">{text.inspector}</h2>
-      {!selectedNode && <p className="text-xs text-slate-400">{text.selectNode}</p>}
-      {selectedNode && (
+      
+      {!selectedNode ? (
+        <div className="space-y-3">
+          <p className="text-xs text-slate-400">{text.selectNode}</p>
+          <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-3">
+            <h3 className="mb-1.5 text-[13px] font-semibold text-sky-200">
+              {text.learningTitle}
+            </h3>
+            <p className="text-[11px] leading-relaxed text-sky-100/70">
+              {text.learningSubtitle}
+            </p>
+          </div>
+        </div>
+      ) : (
         <>
+          <div className="mb-3 rounded-lg border border-sky-500/20 bg-sky-950/20 p-3">
+            <p className="mb-1 text-[11px] font-semibold text-sky-300">{text.learningWhatIsThis}</p>
+            <p className="text-[11px] leading-relaxed text-sky-100/80">
+              {getNodeHelp(selectedNode.type)}
+            </p>
+          </div>
+          
           <div className="mb-2 grid gap-1">
             <span className="text-[11px] text-slate-400">{text.nodeId}</span>
             <code className="rounded-md border border-slate-700 bg-slate-950/70 px-2 py-1 text-xs text-slate-200 font-sans">
@@ -396,6 +429,9 @@ export function BrixEditorPage() {
   const historyPastCount = useEditorStore((state) => state.historyPast.length)
   const historyFutureCount = useEditorStore((state) => state.historyFuture.length)
   const { language, setLanguage, text } = useI18n()
+  const { user, logout } = useAuthStore()
+  const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showDeployModal, setShowDeployModal] = useState(false)
 
   const deferredGraph = useDeferredValue(graph)
   const importGraphInputRef = useRef<HTMLInputElement>(null)
@@ -512,57 +548,7 @@ export function BrixEditorPage() {
     }
   }
 
-  const runPushToGitHub = async (): Promise<void> => {
-    const content = yamlOutput || runCompile()
-    if (!content) return
 
-    const repo = window.prompt('Enter GitHub Repository (e.g., username/repo):')
-    if (!repo) return
-
-    const token = window.prompt('Enter GitHub Personal Access Token (with repo / workflow scope):')
-    if (!token) return
-
-    setStatus({ tone: 'info', message: 'Pushing to GitHub...' })
-    
-    try {
-      const path = `.github/workflows/${toExportFilename(workflowName, 'yml')}`
-      let sha = ''
-      try {
-        const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-          headers: {
-            Authorization: `token ${token}`,
-            Accept: 'application/vnd.github.v3+json'
-          }
-        })
-        if (getRes.ok) {
-          const getData = await getRes.json()
-          sha = getData.sha
-        }
-      } catch {
-        // file doesn't exist, which is fine
-      }
-
-      const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Update ${workflowName} via BrixCI`,
-          content: btoa(unescape(encodeURIComponent(content))),
-          ...(sha ? { sha } : {})
-        })
-      })
-
-      if (!res.ok) throw new Error('Failed to push')
-
-      setStatus({ tone: 'success', message: 'Successfully pushed to GitHub!' })
-    } catch {
-      setStatus({ tone: 'error', message: 'Failed to push to GitHub.' })
-    }
-  }
 
   useEffect(() => {
     const compileForShortcut = (): string | null => {
@@ -665,7 +651,7 @@ export function BrixEditorPage() {
 
             <div className="flex items-center gap-3">
               <a 
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:bg-slate-800 hover:border-slate-500 hover:-translate-y-px"
+                className="hidden sm:inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:bg-slate-800 hover:border-slate-500 hover:-translate-y-px"
                 href="https://github.com/thirawat27/BrixCI"
                 rel="noreferrer"
                 target="_blank"
@@ -674,6 +660,21 @@ export function BrixEditorPage() {
                 <Github size={18} />
                 <span>Star on GitHub</span>
               </a>
+
+              {/* Auth: show UserMenu when logged in, else Login button */}
+              {user ? (
+                <UserMenu user={user} onLogout={logout} />
+              ) : (
+                <button
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-sky-500/50 bg-gradient-to-br from-sky-950 to-sky-800/80 px-4 py-2 text-sm font-semibold text-sky-100 shadow-[0_8px_24px_rgba(14,116,144,0.22)] transition hover:-translate-y-px hover:brightness-110"
+                  id="github-login-trigger-btn"
+                  onClick={() => setShowLoginModal(true)}
+                  type="button"
+                >
+                  <LogIn size={15} />
+                  Sign in with GitHub
+                </button>
+              )}
 
               <label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
               <Languages size={14} />
@@ -810,7 +811,10 @@ export function BrixEditorPage() {
                     <ToolbarMenuItem
                       icon={<Github size={14} />}
                       onClick={() => {
-                        void runPushToGitHub().finally(closeMenu)
+                        // Compile first if no YAML output yet
+                        if (!yamlOutput) runCompile()
+                        setShowDeployModal(true)
+                        closeMenu()
                       }}
                     >
                       Deploy to GitHub
@@ -918,6 +922,15 @@ export function BrixEditorPage() {
       </header>
 
       {status && <StatusToast status={status} />}
+      {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+      {showDeployModal && (
+        <DeployModal
+          workflowName={workflowName}
+          yamlContent={yamlOutput}
+          onClose={() => setShowDeployModal(false)}
+          onRequestLogin={() => setShowLoginModal(true)}
+        />
+      )}
 
       <div className="flex flex-1 flex-col min-h-0 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)_17rem] xl:grid-cols-[18.5rem_minmax(0,1fr)_24rem]">
         <aside className="order-2 lg:order-none max-h-[45vh] lg:max-h-none space-y-3 overflow-auto border-t border-slate-800/80 bg-slate-900/55 p-3 lg:border-t-0 lg:border-r">

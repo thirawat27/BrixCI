@@ -12,6 +12,7 @@ import {
   createJobNode,
   createStepNode,
   createTriggerNode,
+  createEdge,
   nextNodePosition,
 } from '../domain/graph/factories'
 import {
@@ -113,10 +114,12 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
     set((state) => {
       const position = nextNodePosition(state.graph, kind)
       const nodeId = createId(kind)
-      let node
+      let node: ReturnType<typeof createTriggerNode>
+      const autoEdges: BrixEdge[] = []
 
       if (kind === 'trigger') {
         node = createTriggerNode({ id: nodeId, position })
+
       } else if (kind === 'job') {
         const existingJobCount = state.graph.nodes.filter((item) => item.type === 'job').length
         node = createJobNode(
@@ -126,20 +129,49 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
             jobId: `job_${existingJobCount + 1}`,
           },
         )
+
+        // ── Auto-Wire: Trigger → Job ─────────────────────────────────────
+        // If there is exactly 1 Trigger in the canvas, automatically create
+        // an edge from that Trigger to the new Job so the user doesn't have
+        // to manually draw the connection.
+        const triggers = state.graph.nodes.filter((n) => n.type === 'trigger')
+        if (triggers.length === 1) {
+          autoEdges.push(
+            createEdge(createId('edge'), triggers[0].id, nodeId, 'smoothstep'),
+          )
+        }
+
       } else {
-        const firstJob = state.graph.nodes.find((item) => item.type === 'job')
+        // ── Auto-Wire: Job → Step ────────────────────────────────────────
+        // Priority 1: the currently selected node is a Job → use it.
+        // Priority 2: there is exactly 1 Job on the canvas → use it.
+        // In both cases, pre-fill `jobNodeId` AND create the edge.
+        const jobs = state.graph.nodes.filter((item) => item.type === 'job')
+        const selectedJob = state.selectedNodeId
+          ? state.graph.nodes.find(
+              (n) => n.id === state.selectedNodeId && n.type === 'job',
+            )
+          : null
+        const targetJob = selectedJob ?? (jobs.length === 1 ? jobs[0] : null)
+
         node = createStepNode(
           { id: nodeId, position },
           {
             label: 'New Step',
-            jobNodeId: firstJob?.id ?? '',
+            jobNodeId: targetJob?.id ?? '',
           },
         )
+
+        if (targetJob) {
+          autoEdges.push(
+            createEdge(createId('edge'), targetJob.id, nodeId, 'smoothstep'),
+          )
+        }
       }
 
       const nextGraph = resolveGraphOverlaps({
         nodes: [...state.graph.nodes, node],
-        edges: state.graph.edges,
+        edges: [...state.graph.edges, ...autoEdges],
       })
 
       return {
@@ -150,6 +182,7 @@ export const useEditorStore = create<EditorStoreState>((set, get) => ({
       }
     })
   },
+
 
   setWorkflowName: (workflowName) => {
     set({

@@ -11,13 +11,15 @@
 ## 📑 Table of Contents
 
 1. [Introduction](#1-introduction)
-2. [Why BrixCI?](#2-why-brixci)
-3. [Key Features](#3-key-features)
-4. [Core Concepts](#4-core-concepts)
+2. [New to CI/CD? Start Here!](#2-new-to-cicd-start-here)
+3. [Why BrixCI?](#3-why-brixci)
+4. [Key Features](#4-key-features)
+5. [Core Concepts](#5-core-concepts)
    - [Triggers](#triggers)
    - [Jobs](#jobs)
    - [Steps](#steps)
-5. [Ultimate User Manual](#5-ultimate-user-manual)
+6. [Getting Started (For Beginners)](#6-getting-started-for-beginners)
+7. [Ultimate User Manual](#7-ultimate-user-manual)
    - [1. Creating a New Workflow](#1-creating-a-new-workflow)
    - [2. Drawing Connections (Edges)](#2-drawing-connections-edges)
    - [3. Real-Time Validation](#3-real-time-validation)
@@ -25,11 +27,11 @@
    - [5. Using Auto-Layout (Dagre)](#5-using-auto-layout-dagre)
    - [6. Navigating with the MiniMap](#6-navigating-with-the-minimap)
    - [7. Deploying Directly to GitHub](#7-deploying-directly-to-github)
-6. [Templates Library](#6-templates-library)
-7. [Installation & Setup](#7-installation--setup)
-8. [Architecture & Tech Stack](#8-architecture--tech-stack)
-9. [Localization](#9-localization)
-10. [Contributing & Security](#10-contributing--security)
+8. [Templates Library](#8-templates-library)
+9. [Installation & Setup](#9-installation--setup)
+10. [Architecture & Tech Stack](#10-architecture--tech-stack)
+11. [Localization](#11-localization)
+12. [Contributing & Security](#12-contributing--security)
 
 ---
 
@@ -41,7 +43,37 @@ Whether you are a Junior Developer trying to set up your first Continuous Integr
 
 ---
 
-## 2. Why BrixCI?
+## 2. New to CI/CD? Start Here!
+
+If you don't know what **CI/CD** or **GitHub Actions** is, don't worry! Here is a simple explanation to help you understand before you start using BrixCI.
+
+### What is CI/CD?
+Imagine you are building a Lego castle with your friends. Every time someone adds a new piece, you want to make sure it doesn't break the castle. And once the castle is ready, you want to move it carefully to the display window.
+- **CI (Continuous Integration)**: This is like having an automated robot that checks your Lego castle every time a new piece is added. In software, when you write new code, CI automatically runs **tests** to make sure your new code didn't break the app.
+- **CD (Continuous Deployment/Delivery)**: Once the robot confirms the Lego castle is perfectly built and sturdy, it automatically carries it to the display window for everyone to see. In software, CD takes your tested code and automatically **puts it live** on the internet for your users.
+
+### What is GitHub Actions?
+GitHub Actions is a popular platform that provides these "robots". You can tell GitHub Actions what the robot should do (e.g., "test my code", "build my app", "deploy to my server"). You tell the robot what to do by writing instruction files called **Workflows**.
+
+### Why is this hard?
+Normally, to write these Workflow instructions, you have to write code in a language called **YAML**. It looks like this:
+```yaml
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+```
+One small mistake, like missing a space, can cause everything to fail. It can be very confusing for beginners to learn and memorize all the commands.
+
+### How BrixCI Helps You
+BrixCI completely removes the need to write YAML code manually. Instead of typing text, you just **drag and drop boxes** and connect them with lines! BrixCI will take your visual drawing and automatically write the perfect YAML code for you. It's the best way to learn how CI/CD works because you can literally *see* the flow of your deployment.
+
+---
+
+## 3. Why BrixCI?
 
 - **Stop Wasting Time on Syntax Errors:** Missing a space or adding an extra `-` in your YAML? BrixCI generates perfect YAML structure every single time via our built-in robust compiler.
 - **Visualize the Big Picture:** Seeing a graphical hierarchy from Push triggers -> Linters -> Unit Tests -> Deployments helps human brains process dependencies far faster than reading hundreds of lines of code.
@@ -50,7 +82,7 @@ Whether you are a Junior Developer trying to set up your first Continuous Integr
 
 ---
 
-## 3. Key Features
+## 4. Key Features
 
 BrixCI is packed with cutting-edge tools to maximize your developer productivity.
 
@@ -64,27 +96,44 @@ BrixCI is packed with cutting-edge tools to maximize your developer productivity
 
 ---
 
-## 4. Core Concepts
+## 5. Core Concepts
 
 To master BrixCI, you should understand the three primary types of nodes corresponding to the GitHub Actions specification.
 
-### Triggers
+### 🟢 Triggers (The "When")
 Triggers are the starting points. They define **WHEN** a workflow should run. Common triggers include:
 - `push`: Whenever code is pushed to specific branches (e.g., `main`).
 - `pull_request`: Whenever someone opens or updates a Pull Request.
 - `schedule`: To run automated cron jobs (e.g., Every day at midnight).
 
-### Jobs
-Jobs represent a virtual machine or runner (e.g., `ubuntu-latest`, `windows-latest`). All steps inside a job run sequentially on the same server environment, allowing them to share files and environments. Multiple Jobs can run in parallel via concurrent execution mapping.
+### 🟦 Jobs (The "Where")
+Jobs represent a virtual machine or server (e.g., `ubuntu-latest`, `windows-latest`). All steps inside a job run sequentially on the same server environment, allowing them to share files and environments. Multiple Jobs can run in parallel.
+*Beginner tip: Think of a Job as a fresh computer that GitHub briefly turns on just to run your tasks.*
 
-### Steps
-Steps are the atomic execution blocks. A step can either:
-- Run a shell command (e.g., `npm install`).
-- Use an existing open-source GitHub Action (e.g., `actions/checkout@v4`).
+### ⬜ Steps (The "What")
+Steps are the atomic execution blocks. They are the actual tasks you want the computer to do. A step can either:
+- Run a shell command (e.g., `npm install` or `echo "Hello World"`).
+- Use an existing open-source GitHub Action (e.g., `actions/checkout@v4` which downloads your code onto the server).
 
 ---
 
-## 5. Ultimate User Manual
+## 6. Getting Started (For Beginners)
+
+If this is your very first time, follow this simple tutorial to build your first CI pipeline:
+
+1. **Add a Trigger**: Click **+ Create** at the top, and select **Add Trigger**. A green node will appear. This tells GitHub *when* to start. Leave it as `push`.
+2. **Add a Job**: Click **+ Create** -> **Add Job**. A blue node will appear. This tells GitHub *what computer* to use (default is Ubuntu Linux).
+3. **Connect them**: Click the dot on the right side of the green Trigger node, and drag a line to the blue Job node. Now GitHub knows this job should run when a push happens!
+4. **Add Steps (Tasks)**: Click **+ Create** -> **Add Step** (twice, to get two steps).
+5. **Connect Steps**: 
+   - Drag from the Job node to the first Step node.
+   - Drag from the Job node to the second Step node.
+6. **Configure Steps**: Click on the first Step. In the right panel, change the "Action/Run" type to `Action`, and type `actions/checkout@v4`. This downloads your code. Click the second Step, change it to `Run`, and type `npm test`. This tests your code.
+7. **Done!** Look at the right panel. BrixCI automatically wrote all the YAML code for you!
+
+---
+
+## 7. Ultimate User Manual
 
 This section contains highly detailed instructions on every feature in the application, acting as your comprehensive guide.
 
@@ -129,7 +178,7 @@ This is BrixCI’s real superpower!
 
 ---
 
-## 6. Templates Library
+## 8. Templates Library
 
 Why start from scratch when you don't have to? At the top toolbar, you will find a **Templates** dropdown menu pre-populated with common workflows.
 - **Node.js CI**: Instantly generates a pipeline that checks out code, setups up target Node.js versions via a matrix strategy, installs dependencies cleanly with `npm ci`, builds production assets, and rigorously runs test suites.
@@ -137,7 +186,7 @@ Why start from scratch when you don't have to? At the top toolbar, you will find
 
 ---
 
-## 7. Installation & Setup
+## 9. Installation & Setup
 
 Developers wishing to run their own local instance or contribute to BrixCI can follow these straightforward steps:
 
@@ -165,7 +214,7 @@ Your modern hot-reloading development server will now be fully accessible at `ht
 
 ---
 
-## 8. Architecture & Tech Stack
+## 10. Architecture & Tech Stack
 
 BrixCI uses a strictly modular Domain-Driven structure designed to scale flawlessly over time:
 
@@ -178,13 +227,13 @@ BrixCI uses a strictly modular Domain-Driven structure designed to scale flawles
 
 ---
 
-## 9. Localization
+## 11. Localization
 
 To aid a wide network of developers worldwide, global accessibility is highly prioritized. Open the dropdown in the navigation header to switch languages dynamically. Available languages include **English (en)**, **Thai (th)**, and **Chinese (zh)**. The translations are fully decoupled from layout components natively existing cleanly under the `src/i18n` dictionary folders!
 
 ---
 
-## 10. Contributing & Security
+## 12. Contributing & Security
 
 We embrace the global open-source community deeply!
 If you find elusive bugs or want to write new Graph Templates to share:
