@@ -11,6 +11,7 @@ import {
   GitBranch,
   Languages,
   LogIn,
+  Menu,
   Play,
   Plus,
   Redo2,
@@ -19,12 +20,12 @@ import {
   Undo2,
   Upload,
   Workflow,
+  X,
 } from 'lucide-react'
 import { EditorCanvas } from './components/EditorCanvas'
 import { compileGraphToYaml, parseWorkflowYaml } from '../../domain/compiler'
 import { parseGraphDraft } from '../../domain/graph'
-import { nodejsTemplateGraph } from '../../domain/templates/nodejs'
-import { dockerTemplateGraph } from '../../domain/templates/docker'
+import { builtInTemplates } from '../../domain/templates'
 import type { ValidationIssue } from '../../domain/graph'
 import { useI18n, UI_DICTIONARY, UI_LANGUAGES, type UiLanguage } from '../../i18n'
 import { downloadTextFile } from '../../lib/download'
@@ -45,6 +46,7 @@ interface StatusMessage {
 }
 
 const panelBlockClass = 'glass-card p-4'
+type ToolbarMenuVariant = 'dropdown' | 'accordion'
 
 function toExportFilename(workflowName: string, extension: 'yml' | 'json'): string {
   const normalized = workflowName
@@ -120,16 +122,18 @@ function ToolbarMenu({
   label,
   icon,
   children,
+  variant = 'dropdown',
 }: {
   label: string
   icon: ReactNode
   children: (closeMenu: () => void) => ReactNode
+  variant?: ToolbarMenuVariant
 }) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) {
+    if (!open || variant !== 'dropdown') {
       return
     }
 
@@ -152,27 +156,54 @@ function ToolbarMenu({
       window.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [open])
+  }, [open, variant])
+
+  useEffect(() => {
+    if (!open || variant === 'dropdown') {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, variant])
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className={`relative ${variant === 'accordion' ? 'w-full' : ''}`} ref={menuRef}>
       <button
         aria-expanded={open}
-        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110"
+        className={`inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 font-semibold text-slate-100 transition hover:-translate-y-px hover:brightness-110 ${
+          variant === 'accordion' ? 'w-full justify-between text-sm' : 'text-xs'
+        }`}
         onClick={() => {
           setOpen((current) => !current)
         }}
         type="button"
       >
-        {icon}
-        {label}
+        <span className="inline-flex items-center gap-2">
+          {icon}
+          {label}
+        </span>
         <ChevronDown className={`transition ${open ? 'rotate-180' : ''}`} size={14} />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-2 min-w-[210px] rounded-2xl border border-slate-800 bg-slate-950/96 p-2 shadow-[0_24px_48px_rgba(0,0,0,0.34)] backdrop-blur-xl">
-          <div className="grid gap-1">{children(() => setOpen(false))}</div>
-        </div>
+        variant === 'accordion' ? (
+          <div className="mt-2 rounded-2xl border border-slate-800 bg-slate-950/94 p-2 shadow-[0_18px_36px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+            <div className="grid gap-1">{children(() => setOpen(false))}</div>
+          </div>
+        ) : (
+          <div className="absolute left-0 top-full z-30 mt-2 min-w-[210px] rounded-2xl border border-slate-800 bg-slate-950/96 p-2 shadow-[0_24px_48px_rgba(0,0,0,0.34)] backdrop-blur-xl">
+            <div className="grid gap-1">{children(() => setOpen(false))}</div>
+          </div>
+        )
       )}
     </div>
   )
@@ -193,7 +224,7 @@ function ToolbarMenuItem({
 }) {
   return (
     <button
-      className={`inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 ${
+      className={`inline-flex min-h-10 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 ${
         tone === 'danger'
           ? 'border-rose-500/35 bg-rose-950/20 text-rose-100'
           : 'border-slate-800 bg-slate-900/90 text-slate-100'
@@ -432,6 +463,7 @@ export function BrixEditorPage() {
   const { user, logout } = useAuthStore()
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showDeployModal, setShowDeployModal] = useState(false)
+  const [isToolbarMenuOpen, setIsToolbarMenuOpen] = useState(false)
 
   const deferredGraph = useDeferredValue(graph)
   const importGraphInputRef = useRef<HTMLInputElement>(null)
@@ -451,6 +483,19 @@ export function BrixEditorPage() {
       window.clearTimeout(timer)
     }
   }, [status])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1280) {
+        setIsToolbarMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   useEffect(() => {
     if (didRestoreDraft.current) {
@@ -627,31 +672,317 @@ export function BrixEditorPage() {
 
   const errorCount = issues.filter((issue) => issue.severity === 'error').length
   const warningCount = issues.filter((issue) => issue.severity === 'warning').length
+  const closeToolbarMenu = () => {
+    setIsToolbarMenuOpen(false)
+  }
+  const renderMetricPills = () => (
+    <>
+      <MetricPill icon={<Workflow size={13} />}>
+        {text.nodes}: {graph.nodes.length}
+      </MetricPill>
+      <MetricPill icon={<GitBranch size={13} />}>
+        {text.edges}: {graph.edges.length}
+      </MetricPill>
+      <MetricPill icon={<ShieldCheck size={13} />} tone={errorCount > 0 ? 'danger' : 'success'}>
+        {errorCount} / {warningCount} {text.errorsAndWarnings}
+      </MetricPill>
+      <MetricPill icon={<CheckCircle2 size={13} />}>{text.autosaveOn}</MetricPill>
+    </>
+  )
+  const renderToolbarActions = ({
+    mobile = false,
+    onActionComplete,
+  }: {
+    mobile?: boolean
+    onActionComplete?: () => void
+  } = {}) => {
+    const menuVariant: ToolbarMenuVariant = mobile ? 'accordion' : 'dropdown'
+    const finalizeAction = () => {
+      onActionComplete?.()
+    }
+
+    return (
+      <div className={mobile ? 'grid gap-2' : 'flex flex-wrap items-center gap-2'}>
+        <ToolbarMenu icon={<Plus size={14} />} label={text.groupCreate} variant={menuVariant}>
+          {(closeMenu) => (
+            <>
+              <ToolbarMenuItem
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  addNode('trigger')
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.addTrigger}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  addNode('job')
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.addJob}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Plus size={14} />}
+                onClick={() => {
+                  addNode('step')
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.addStep}
+              </ToolbarMenuItem>
+            </>
+          )}
+        </ToolbarMenu>
+
+        <ToolbarMenu
+          icon={<Blocks size={14} />}
+          label={text.templates || 'Templates'}
+          variant={menuVariant}
+        >
+          {(closeMenu) => (
+            <div
+              className={`grid gap-1 overflow-y-auto overflow-x-hidden pr-1 ${
+                mobile ? 'max-h-[min(24rem,55vh)]' : 'max-h-[60vh] w-[340px]'
+              }`}
+            >
+              {builtInTemplates.map((template) => (
+                <ToolbarMenuItem
+                  key={template.id}
+                  icon={
+                    <div className="mt-0.5 shrink-0">
+                      <Blocks size={14} />
+                    </div>
+                  }
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Load ${template.label[language]} Template? This will replace your current workflow.`,
+                      )
+                    ) {
+                      replaceGraph(template.graph, '', template.label[language], {})
+                      setTimeout(() => {
+                        useEditorStore.getState().autoLayout()
+                      }, 100)
+                      closeMenu()
+                      finalizeAction()
+                    }
+                  }}
+                >
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="break-words leading-tight">{template.label[language]}</span>
+                    <span className="break-words text-[10px] font-normal leading-snug text-slate-400">
+                      {template.description[language]}
+                    </span>
+                  </div>
+                </ToolbarMenuItem>
+              ))}
+            </div>
+          )}
+        </ToolbarMenu>
+
+        <button
+          className={`${iconButtonClass('success')} ${mobile ? 'w-full justify-start text-sm' : ''}`}
+          onClick={() => {
+            const result = validate()
+            setStatus({
+              tone: hasBlockingErrors(result) ? 'error' : 'success',
+              message: hasBlockingErrors(result) ? text.validateFailed : text.validatePassed,
+            })
+            finalizeAction()
+          }}
+          title={text.validate}
+          type="button"
+        >
+          <ShieldCheck size={14} />
+          {text.validate}
+        </button>
+
+        <button
+          className={`${iconButtonClass('sky')} ${mobile ? 'w-full justify-start text-sm' : ''}`}
+          onClick={() => {
+            runCompile()
+            finalizeAction()
+          }}
+          title={text.compile}
+          type="button"
+        >
+          <Play size={14} />
+          {text.compile}
+        </button>
+
+        <ToolbarMenu icon={<Download size={14} />} label={text.groupBuild} variant={menuVariant}>
+          {(closeMenu) => (
+            <>
+              <ToolbarMenuItem
+                icon={<Download size={14} />}
+                onClick={() => {
+                  runExportYaml()
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.exportYaml}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Copy size={14} />}
+                onClick={() => {
+                  void runCopyYaml().finally(() => {
+                    closeMenu()
+                    finalizeAction()
+                  })
+                }}
+              >
+                {text.copyYaml}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Github size={14} />}
+                onClick={() => {
+                  if (!yamlOutput) {
+                    runCompile()
+                  }
+                  setShowDeployModal(true)
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                Deploy to GitHub
+              </ToolbarMenuItem>
+            </>
+          )}
+        </ToolbarMenu>
+
+        <ToolbarMenu icon={<Upload size={14} />} label={text.groupTransfer} variant={menuVariant}>
+          {(closeMenu) => (
+            <>
+              <ToolbarMenuItem
+                icon={<FileCode size={14} />}
+                onClick={() => {
+                  downloadTextFile(
+                    toExportFilename(workflowName, 'json'),
+                    JSON.stringify({ graph, yamlOutput, workflowName, workflowEnv }, null, 2),
+                    'application/json;charset=utf-8',
+                  )
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.exportGraphJson}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Upload size={14} />}
+                onClick={() => {
+                  importYamlInputRef.current?.click()
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.importYaml}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<Upload size={14} />}
+                onClick={() => {
+                  importGraphInputRef.current?.click()
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.importGraphJson}
+              </ToolbarMenuItem>
+            </>
+          )}
+        </ToolbarMenu>
+
+        <ToolbarMenu icon={<Undo2 size={14} />} label={text.groupHistory} variant={menuVariant}>
+          {(closeMenu) => (
+            <>
+              <ToolbarMenuItem
+                disabled={historyPastCount === 0}
+                icon={<Undo2 size={14} />}
+                onClick={() => {
+                  undo()
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.undo}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                disabled={historyFutureCount === 0}
+                icon={<Redo2 size={14} />}
+                onClick={() => {
+                  redo()
+                  closeMenu()
+                  finalizeAction()
+                }}
+              >
+                {text.redo}
+              </ToolbarMenuItem>
+              <ToolbarMenuItem
+                icon={<RotateCcw size={14} />}
+                onClick={() => {
+                  if (!window.confirm(text.resetConfirm)) {
+                    return
+                  }
+                  reset()
+                  closeMenu()
+                  finalizeAction()
+                }}
+                tone="danger"
+              >
+                {text.reset}
+              </ToolbarMenuItem>
+            </>
+          )}
+        </ToolbarMenu>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-[100dvh] flex-col font-sans text-slate-100">
       <header className="relative z-20 border-b border-slate-800/80 bg-slate-950/88 px-3 py-3 backdrop-blur-xl md:px-4">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
-                <img
-                  alt="BrixCI logo"
-                  className="size-full object-contain"
-                  height={40}
-                  src="/BrixCI.png"
-                  width={40}
-                />
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="flex size-14 items-center justify-center overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-500/10 p-2 shadow-[0_18px_36px_rgba(14,116,144,0.15)]">
+                  <img
+                    alt="BrixCI logo"
+                    className="size-full object-contain"
+                    height={40}
+                    src="/BrixCI.png"
+                    width={40}
+                  />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold leading-tight">{text.appTitle}</h1>
+                  <p className="text-sm text-slate-400">{text.appSubtitle}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-semibold leading-tight">{text.appTitle}</h1>
-                <p className="text-sm text-slate-400">{text.appSubtitle}</p>
-              </div>
+
+              <button
+                aria-controls="toolbar-mobile-panel"
+                aria-expanded={isToolbarMenuOpen}
+                aria-label="Toggle toolbar menu"
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:brightness-110 xl:hidden"
+                onClick={() => {
+                  setIsToolbarMenuOpen((current) => !current)
+                }}
+                type="button"
+              >
+                {isToolbarMenuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
             </div>
 
-            <div className="flex items-center gap-3">
-              <a 
-                className="hidden sm:inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:bg-slate-800 hover:border-slate-500 hover:-translate-y-px"
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
+              <a
+                className="hidden min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-4 py-2 text-sm font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:border-slate-500 hover:bg-slate-800 sm:inline-flex"
                 href="https://github.com/thirawat27/BrixCI"
                 rel="noreferrer"
                 target="_blank"
@@ -661,12 +992,11 @@ export function BrixEditorPage() {
                 <span>Star on GitHub</span>
               </a>
 
-              {/* Auth: show UserMenu when logged in, else Login button */}
               {user ? (
                 <UserMenu user={user} onLogout={logout} />
               ) : (
                 <button
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-sky-500/50 bg-gradient-to-br from-sky-950 to-sky-800/80 px-4 py-2 text-sm font-semibold text-sky-100 shadow-[0_8px_24px_rgba(14,116,144,0.22)] transition hover:-translate-y-px hover:brightness-110"
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-sky-500/50 bg-gradient-to-br from-sky-950 to-sky-800/80 px-4 py-2 text-sm font-semibold text-sky-100 shadow-[0_8px_24px_rgba(14,116,144,0.22)] transition hover:-translate-y-px hover:brightness-110 sm:w-auto"
                   id="github-login-trigger-btn"
                   onClick={() => setShowLoginModal(true)}
                   type="button"
@@ -676,246 +1006,48 @@ export function BrixEditorPage() {
                 </button>
               )}
 
-              <label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
-              <Languages size={14} />
-              <span>{text.language}</span>
-              <select
-                className="min-w-[74px] bg-transparent text-xs outline-none"
-                onChange={(event) => {
-                  setLanguage(event.currentTarget.value as UiLanguage)
-                }}
-                value={language}
-              >
-                {UI_LANGUAGES.map((lang) => (
-                  <option className="bg-slate-900 text-slate-100" key={lang} value={lang}>
-                    {UI_DICTIONARY[lang].languageName}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <label className="inline-flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-slate-700 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-[0_18px_36px_rgba(0,0,0,0.18)] sm:w-auto sm:justify-start">
+                <span className="inline-flex items-center gap-2">
+                  <Languages size={14} />
+                  <span>{text.language}</span>
+                </span>
+                <select
+                  className="min-w-[74px] bg-transparent text-xs outline-none"
+                  onChange={(event) => {
+                    setLanguage(event.currentTarget.value as UiLanguage)
+                  }}
+                  value={language}
+                >
+                  {UI_LANGUAGES.map((lang) => (
+                    <option className="bg-slate-900 text-slate-100" key={lang} value={lang}>
+                      {UI_DICTIONARY[lang].languageName}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center xl:hidden">
+            {renderMetricPills()}
+          </div>
+
+          {isToolbarMenuOpen && (
+            <div
+              className="glass-card xl:hidden border-slate-800/80 bg-slate-950/80 p-3"
+              id="toolbar-mobile-panel"
+            >
+              {renderToolbarActions({ mobile: true, onActionComplete: closeToolbarMenu })}
+            </div>
+          )}
+
+          <div className="hidden items-start justify-between gap-3 xl:flex">
             <div className="flex flex-wrap items-center gap-2">
-              <ToolbarMenu icon={<Plus size={14} />} label={text.groupCreate}>
-                {(closeMenu) => (
-                  <>
-                    <ToolbarMenuItem
-                      icon={<Plus size={14} />}
-                      onClick={() => {
-                        addNode('trigger')
-                        closeMenu()
-                      }}
-                    >
-                      {text.addTrigger}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Plus size={14} />}
-                      onClick={() => {
-                        addNode('job')
-                        closeMenu()
-                      }}
-                    >
-                      {text.addJob}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Plus size={14} />}
-                      onClick={() => {
-                        addNode('step')
-                        closeMenu()
-                      }}
-                    >
-                      {text.addStep}
-                    </ToolbarMenuItem>
-                  </>
-                )}
-              </ToolbarMenu>
-
-              <ToolbarMenu icon={<Blocks size={14} />} label={text.templates || 'Templates'}>
-                {(closeMenu) => (
-                  <>
-                    <ToolbarMenuItem
-                      icon={<Blocks size={14} />}
-                      onClick={() => {
-                        if (window.confirm('Load Node.js CI Template? This will replace your current workflow.')) {
-                          replaceGraph(nodejsTemplateGraph, '', 'Node.js CI', {})
-                          setTimeout(() => {
-                            useEditorStore.getState().autoLayout()
-                          }, 100)
-                        }
-                        closeMenu()
-                      }}
-                    >
-                      Node.js CI
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Blocks size={14} />}
-                      onClick={() => {
-                        if (window.confirm('Load Docker Build & Push Template? This will replace your current workflow.')) {
-                          replaceGraph(dockerTemplateGraph, '', 'Docker Build & Push', {})
-                          setTimeout(() => {
-                            useEditorStore.getState().autoLayout()
-                          }, 100)
-                        }
-                        closeMenu()
-                      }}
-                    >
-                      Docker Build & Push
-                    </ToolbarMenuItem>
-                  </>
-                )}
-              </ToolbarMenu>
-
-              <button
-                className={iconButtonClass('success')}
-                onClick={() => {
-                  const result = validate()
-                  setStatus({
-                    tone: hasBlockingErrors(result) ? 'error' : 'success',
-                    message: hasBlockingErrors(result) ? text.validateFailed : text.validatePassed,
-                  })
-                }}
-                title={text.validate}
-                type="button"
-              >
-                <ShieldCheck size={14} />
-                {text.validate}
-              </button>
-
-              <button className={iconButtonClass('sky')} onClick={runCompile} title={text.compile} type="button">
-                <Play size={14} />
-                {text.compile}
-              </button>
-
-              <ToolbarMenu icon={<Download size={14} />} label={text.groupBuild}>
-                {(closeMenu) => (
-                  <>
-                    <ToolbarMenuItem
-                      icon={<Download size={14} />}
-                      onClick={() => {
-                        runExportYaml()
-                        closeMenu()
-                      }}
-                    >
-                      {text.exportYaml}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Copy size={14} />}
-                      onClick={() => {
-                        void runCopyYaml().finally(closeMenu)
-                      }}
-                    >
-                      {text.copyYaml}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Github size={14} />}
-                      onClick={() => {
-                        // Compile first if no YAML output yet
-                        if (!yamlOutput) runCompile()
-                        setShowDeployModal(true)
-                        closeMenu()
-                      }}
-                    >
-                      Deploy to GitHub
-                    </ToolbarMenuItem>
-                  </>
-                )}
-              </ToolbarMenu>
-
-              <ToolbarMenu icon={<Upload size={14} />} label={text.groupTransfer}>
-                {(closeMenu) => (
-                  <>
-                    <ToolbarMenuItem
-                      icon={<FileCode size={14} />}
-                      onClick={() => {
-                        downloadTextFile(
-                          toExportFilename(workflowName, 'json'),
-                          JSON.stringify({ graph, yamlOutput, workflowName, workflowEnv }, null, 2),
-                          'application/json;charset=utf-8',
-                        )
-                        closeMenu()
-                      }}
-                    >
-                      {text.exportGraphJson}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Upload size={14} />}
-                      onClick={() => {
-                        importYamlInputRef.current?.click()
-                        closeMenu()
-                      }}
-                    >
-                      {text.importYaml}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<Upload size={14} />}
-                      onClick={() => {
-                        importGraphInputRef.current?.click()
-                        closeMenu()
-                      }}
-                    >
-                      {text.importGraphJson}
-                    </ToolbarMenuItem>
-                  </>
-                )}
-              </ToolbarMenu>
-
-              <ToolbarMenu icon={<Undo2 size={14} />} label={text.groupHistory}>
-                {(closeMenu) => (
-                  <>
-                    <ToolbarMenuItem
-                      disabled={historyPastCount === 0}
-                      icon={<Undo2 size={14} />}
-                      onClick={() => {
-                        undo()
-                        closeMenu()
-                      }}
-                    >
-                      {text.undo}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      disabled={historyFutureCount === 0}
-                      icon={<Redo2 size={14} />}
-                      onClick={() => {
-                        redo()
-                        closeMenu()
-                      }}
-                    >
-                      {text.redo}
-                    </ToolbarMenuItem>
-                    <ToolbarMenuItem
-                      icon={<RotateCcw size={14} />}
-                      onClick={() => {
-                        if (!window.confirm(text.resetConfirm)) {
-                          return
-                        }
-                        reset()
-                        closeMenu()
-                      }}
-                      tone="danger"
-                    >
-                      {text.reset}
-                    </ToolbarMenuItem>
-                  </>
-                )}
-              </ToolbarMenu>
+              {renderToolbarActions()}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <MetricPill icon={<Workflow size={13} />}>
-                {text.nodes}: {graph.nodes.length}
-              </MetricPill>
-              <MetricPill icon={<GitBranch size={13} />}>
-                {text.edges}: {graph.edges.length}
-              </MetricPill>
-              <MetricPill
-                icon={<ShieldCheck size={13} />}
-                tone={errorCount > 0 ? 'danger' : 'success'}
-              >
-                {errorCount} / {warningCount} {text.errorsAndWarnings}
-              </MetricPill>
-              <MetricPill icon={<CheckCircle2 size={13} />}>{text.autosaveOn}</MetricPill>
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              {renderMetricPills()}
             </div>
           </div>
         </div>
